@@ -1,0 +1,14 @@
+Your issue is happening because you are setting `PROVIDER_APPLICATION_NAME` to `null` in the `tearDown` method. This causes all subsequent runs to fail since it expects this value to not be null. Here's how you can fix the problem:
+
+```java
+@AfterEach
+public void tearDown() throws IOException {
+    DubboBootstrap.reset();
+    // PROVIDER_APPLICATION_NAME = null; // remove this line
+    serviceConfig = null;
+    // The exported service has been unexported
+    Assertions.assertTrue(serviceListener.getExportedServices().isEmpty());
+    serviceListener = null;
+    logger.info(getClass().getSimpleName() + " testcase is ending...");
+}
+```

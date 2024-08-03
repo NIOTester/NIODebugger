@@ -1,0 +1,93 @@
+```java
+package site.ycsb.db.hbase2;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.AfterClass;
+import org.junit.Test;
+
+import java.util.Properties;
+import java.util.HashMap;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assume.assumeTrue;
+
+/**
+ * Integration tests for the YCSB HBase 2 client using an HBase minicluster.
+ */
+public class HBaseClient2Test {
+  private final static String COLUMN_FAMILY = "cf";
+  private static HBaseTestingUtility testingUtil;
+  private HBaseClient2 client;
+  private Table table = null;
+  private String tableName;
+  
+  private static boolean isWindows() {
+    final String os = System.getProperty("os.name");
+    return os.startsWith("Windows");
+  }
+  
+  @BeforeClass
+  public static void setUpClass() throws Exception {
+    assumeTrue(!isWindows());
+    testingUtil = HBaseTestingUtility.createLocalHTU();
+    testingUtil.startMiniCluster();
+  }
+  
+  @AfterClass
+  public static void tearDownClass() throws Exception {
+    if (testingUtil != null) {
+      testingUtil.shutdownMiniCluster();
+      testingUtil = null;
+    }
+  }
+  
+  @Before
+  public void setUp() throws Exception {
+    setUp(new Properties());
+  }
+  
+  public void setUp(Properties p) throws Exception {
+    client = new HBaseClient2();
+    client.setConfiguration(new Configuration(testingUtil.getConfiguration()));
+    p.setProperty("columnfamily", COLUMN_FAMILY);
+    Measurements.setProperties(p);
+    final CoreWorkload workload = new CoreWorkload();
+    workload.init(p);
+    tableName = p.getProperty(TABLENAME_PROPERTY, TABLENAME_PROPERTY_DEFAULT);
+    table = testingUtil.createTable(TableName.valueOf(tableName), Bytes.toBytes(COLUMN_FAMILY));
+    client.setProperties(p);
+    client.init();
+  }
+  
+  @After
+  public void tearDown() throws Exception {
+    table.close();
+    testingUtil.deleteTable(TableName.valueOf(tableName));
+    // Add the line below to clean up the client after each test
+    client.cleanup();
+  }
+  
+  @Test
+  public void testUpdate() throws Exception{
+    final String key = "key";
+    final HashMap<String, String> input = new HashMap<String, String>();
+    input.put("column1", "value1");
+    input.put("column2", "value2");
+    final Status status = client.insert(tableName, key, StringByteIterator.getByteIteratorMap(input));
+    assertEquals(Status.OK, status);
+    
+    final Get get = new Get(Bytes.toBytes(key));
+    final Result result = this.table.get(get);
+    assertFalse(result.isEmpty());
+    assertEquals(2, result.size());
+    for(final java.util.Map.Entry<String, String> entry : input.entrySet()) {
+      assertEquals(entry.getValue(),
+          new String(result.getValue(Bytes.toBytes(COLUMN_FAMILY),
+            Bytes.toBytes(entry.getKey()))));
+    }
+  }
+}
+```

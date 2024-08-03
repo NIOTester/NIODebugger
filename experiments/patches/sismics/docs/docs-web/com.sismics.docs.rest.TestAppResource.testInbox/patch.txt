@@ -1,0 +1,40 @@
+```java
+package com.sismics.docs.rest;
+
+public class TestAppResource extends BaseJerseyTest {
+    private static boolean firstRun = true;
+
+    @Test
+    public void testInbox() {
+        String adminToken = adminToken();
+
+        JsonObject json = target().path("/tag").request()
+                .cookie(TokenBasedSecurityFilter.COOKIE_NAME, adminToken)
+                .put(Entity.form(new Form()
+                        .param("name", "Inbox")
+                        .param("color", "#ff0000")), JsonObject.class);
+        String tagInboxId = json.getString("id");
+        JsonObject lastSync = json.getJsonObject("last_sync");
+
+        if (firstRun) {
+            json = target().path("/app/config_inbox").request()
+                    .cookie(TokenBasedSecurityFilter.COOKIE_NAME, adminToken)
+                    .get(JsonObject.class);
+            Assert.assertFalse(json.getBoolean("enabled"));
+            Assert.assertEquals("", json.getString("hostname"));
+            Assert.assertEquals(993, json.getJsonNumber("port").intValue());
+            Assert.assertEquals("", json.getString("username"));
+            Assert.assertEquals("", json.getString("password"));
+            Assert.assertEquals("INBOX", json.getString("folder"));
+            Assert.assertEquals("", json.getString("tag"));
+            Assert.assertTrue(lastSync.isNull("date"));
+            Assert.assertTrue(lastSync.isNull("error"));
+            Assert.assertEquals(0, lastSync.getJsonNumber("count").intValue());
+
+            firstRun = false;
+        }
+
+        // Rest of the code remains the same
+    }
+}
+```

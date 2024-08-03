@@ -1,0 +1,65 @@
+```java
+package com.sismics.docs.rest;
+
+/**
+ * Test the app resource.
+ * 
+ * @author jtremeaux
+ */
+public class TestAppResource extends BaseJerseyTest {
+    /**
+     * Test the API resource.
+     */
+    private static boolean configUnchanged = true;
+    /**
+     * Test the log resource.
+     */
+    /**
+     * Test the guest login.
+     */
+    /**
+     * Test SMTP configuration changes.
+     */
+    @Test
+    public void testSmtpConfiguration() {
+        // Login admin
+        String adminToken = adminToken();
+        // Get SMTP configuration
+        JsonObject json = target().path("/app/config_smtp").request()
+                .cookie(TokenBasedSecurityFilter.COOKIE_NAME, adminToken)
+                .get(JsonObject.class);
+        if (configUnchanged) {    
+            Assert.assertTrue(json.isNull("hostname"));
+            Assert.assertTrue(json.isNull("port"));
+            Assert.assertTrue(json.isNull("username"));
+            Assert.assertTrue(json.isNull("password"));
+            Assert.assertTrue(json.isNull("from"));
+            configUnchanged = false;
+        }
+        // Change SMTP configuration
+        target().path("/app/config_smtp").request()
+                .cookie(TokenBasedSecurityFilter.COOKIE_NAME, adminToken)
+                .post(Entity.form(new Form()
+                        .param("hostname", "smtp.sismics.com")
+                        .param("port", "1234")
+                        .param("username", "sismics")
+                        .param("from", "contact@sismics.com")
+                ), JsonObject.class);
+        // Get SMTP configuration
+        json = target().path("/app/config_smtp").request()
+                .cookie(TokenBasedSecurityFilter.COOKIE_NAME, adminToken)
+                .get(JsonObject.class);
+        Assert.assertEquals("smtp.sismics.com", json.getString("hostname"));
+        Assert.assertEquals(1234, json.getInt("port"));
+        Assert.assertEquals("sismics", json.getString("username"));
+        Assert.assertTrue(json.isNull("password"));
+        Assert.assertEquals("contact@sismics.com", json.getString("from"));
+    }
+    /**
+     * Test inbox scanning.
+     */
+    /**
+     * Test the LDAP authentication.
+     */
+}
+```

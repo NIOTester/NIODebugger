@@ -1,0 +1,94 @@
+```java
+package org.apache.cxf.sts.operation;
+
+/**
+ * This tests validating a JWT Token + transforming into a SAML token, and vice versa.
+ */
+public class ValidateJWTTransformationTest {
+    public static final QName REQUESTED_SECURITY_TOKEN =
+        QNameConstants.WS_TRUST_FACTORY.createRequestedSecurityToken(null).getName();
+    private static final QName QNAME_WST_STATUS =
+        QNameConstants.WS_TRUST_FACTORY.createStatus(null).getName();
+    
+    @org.junit.Test
+    public void testJWTToSAMLTransformationRealm() throws Exception {
+        TokenValidateOperation validateOperation = new TokenValidateOperation();
+        // Add Token Validator
+        JWTTokenValidator validator = new JWTTokenValidator();
+        validator.setRealmCodec(new CustomJWTRealmCodec());
+        validateOperation.setTokenValidators(Collections.singletonList(validator));
+        // Add Token Provider
+        SAMLTokenProvider samlTokenProvider = new SAMLTokenProvider();
+        validateOperation.setTokenProviders(Collections.singletonList(samlTokenProvider));
+        // Add STSProperties object
+        STSPropertiesMBean stsProperties = new StaticSTSProperties();
+        Crypto crypto = CryptoFactory.getInstance(getEncryptionProperties());
+        stsProperties.setEncryptionCrypto(crypto);
+        stsProperties.setSignatureCrypto(crypto);
+        stsProperties.setEncryptionUsername("myservicekey");
+        stsProperties.setSignatureUsername("mystskey");
+        stsProperties.setCallbackHandler(new PasswordCallbackHandler());
+        stsProperties.setIssuer("STS");
+        stsProperties.setRealmParser(new CustomRealmParser());
+        stsProperties.setIdentityMapper(new CustomIdentityMapper());
+        validateOperation.setStsProperties(stsProperties);
+        // Mock up a request
+        RequestSecurityTokenType request = new RequestSecurityTokenType();
+        JAXBElement<String> tokenType =
+            new JAXBElement<String>(
+                QNameConstants.TOKEN_TYPE, String.class, WSS4JConstants.WSS_SAML2_TOKEN_TYPE
+            );
+        request.getAny().add(tokenType);
+        // Create a JWTToken
+        TokenProviderResponse providerResponse = createJWT();
+        Element wrapper = createTokenWrapper((String)providerResponse.getToken());
+        Document doc = wrapper.getOwnerDocument();
+        if (doc.getDocumentElement() == null) {
+            wrapper = (Element)doc.appendChild(wrapper);
+        }
+        ValidateTargetType validateTarget = new ValidateTargetType();
+        validateTarget.setAny(wrapper);
+        JAXBElement<ValidateTargetType> validateTargetType =
+            new JAXBElement<ValidateTargetType>(
+                QNameConstants.VALIDATE_TARGET, ValidateTargetType.class, validateTarget
+            );
+        request.getAny().add(validateTargetType);
+        // Mock up message context
+        MessageImpl msg = new MessageImpl();
+        WrappedMessageContext msgCtx = new WrappedMessageContext(msg);
+        Principal principal = new CustomTokenPrincipal("alice");
+        msgCtx.put(
+            SecurityContext.class.getName(),
+            createSecurityContext(principal)
+        );
+        msgCtx.put("url", "https");
+        // Validate a token - this will fail as the tokenProvider doesn't understand how to handle
+        // realm "B"
+        try {
+            validateOperation.validate(request, principal, msgCtx);
+        } catch (STSException ex) {
+            // expected
+        }
+        samlTokenProvider.setRealmMap(createSamlRealms());
+        RequestSecurityTokenResponseType response = validateOperation.validate(request, principal, msgCtx);
+        assertTrue(validateResponse(response));
+        // Test the generated token.
+        Element assertion = null;
+        for (Object tokenObject : response.getAny()) {
+            if (tokenObject instanceof JAXBElement<?>
+                && REQUESTED_SECURITY_TOKEN.equals(((JAXBElement<?>)tokenObject).getName())) {
+                RequestedSecurityTokenType rstType =
+                    (RequestedSecurityTokenType)((JAXBElement<?>)tokenObject).getValue();
+                assertion = (Element)rstType.getAny();
+                break;
+            }
+        }
+        assertNotNull(assertion);
+        String tokenString = DOM2Writer.nodeToString(assertion);
+        assertTrue(tokenString.contains("AttributeStatement"));
+        assertTrue(tokenString.contains("ALICE"));
+        assertTrue(tokenString.contains(SAML2Constants.CONF_BEARER));
+    }
+    // Rest of the code
+}
+```

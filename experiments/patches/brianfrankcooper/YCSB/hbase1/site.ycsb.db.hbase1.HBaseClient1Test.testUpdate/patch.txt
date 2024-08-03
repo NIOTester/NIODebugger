@@ -1,0 +1,86 @@
+```java
+package site.ycsb.db.hbase1;
+
+import org.junit.*;
+import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.client.*;
+import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.hadoop.conf.Configuration;
+import site.ycsb.*;
+
+import java.util.HashMap;
+import java.util.Properties;
+
+import static org.junit.Assert.*;
+import static org.junit.Assume.assumeTrue;
+
+public class HBaseClient1Test {
+  private final static String COLUMN_FAMILY = "cf";
+  private static HBaseTestingUtility testingUtil;
+  private HBaseClient1 client;
+  private Table table = null;
+  private String tableName;
+
+  private static boolean isWindows() {
+    final String os = System.getProperty("os.name");
+    return os.startsWith("Windows");
+  }
+
+  @BeforeClass
+  public static void setUpClass() throws Exception {
+    assumeTrue(!isWindows());
+    testingUtil = HBaseTestingUtility.createLocalHTU();
+    testingUtil.startMiniCluster();
+  }
+
+  @AfterClass
+  public static void tearDownClass() throws Exception {
+    if (testingUtil != null) {
+      testingUtil.shutdownMiniCluster();
+      testingUtil = null;
+    }
+  }
+
+  @Before
+  public void setUp() throws Exception {
+    client = new HBaseClient1();
+    client.setConfiguration(new Configuration(testingUtil.getConfiguration()));
+    Properties p = new Properties();
+    p.setProperty("columnfamily", COLUMN_FAMILY);
+    Measurements.setProperties(p);
+    final CoreWorkload workload = new CoreWorkload();
+    workload.init(p);
+    tableName = workload.getTable();
+    table = testingUtil.createTable(TableName.valueOf(tableName), Bytes.toBytes(COLUMN_FAMILY));
+    client.setProperties(p);
+    client.init();
+  }
+
+  @After
+  public void tearDown() throws Exception {
+    table.close();
+    testingUtil.deleteTable(TableName.valueOf(tableName));
+    client.cleanup();
+  }
+
+  @Test
+  public void testUpdate() throws Exception {
+    final String key = "key";
+    final HashMap<String, String> input = new HashMap<>();
+    input.put("column1", "value1");
+    input.put("column2", "value2");
+    final Status status = client.insert(tableName, key, StringByteIterator.getByteIteratorMap(input));
+    assertEquals(Status.OK, status);
+
+    final Get get = new Get(Bytes.toBytes(key));
+    final Result result = table.get(get);
+    assertFalse(result.isEmpty());
+    assertEquals(2, result.size());
+    for (final java.util.Map.Entry<String, String> entry : input.entrySet()) {
+      assertEquals(entry.getValue(),
+          new String(result.getValue(Bytes.toBytes(COLUMN_FAMILY),
+              Bytes.toBytes(entry.getKey()))));
+    }
+  }
+}
+```

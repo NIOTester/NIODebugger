@@ -1,0 +1,22 @@
+You can fix the test by defining a new id for the state machine in each test run. You can achieve this by appending a timestamp to the state machine id. Here is the revised code:
+
+```java
+public class StateMachinePlantUMLTest {
+    // ... other code ...
+    
+    @Test
+    public void testPlantUML(){
+        // ... other code ...
+        
+        // Add a timestamp to the state machine id
+        String stateMachineId = "AdjustPriceTask" + System.currentTimeMillis();
+        StateMachine stateMachine = builder.build(stateMachineId);
+        
+        // ... other code ...
+    }
+    
+    // ... other code ...
+}
+```
+
+This will ensure that every state machine built in each test run has a unique id, preventing conflict with previous test runs.

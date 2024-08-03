@@ -1,0 +1,32 @@
+```java
+package org.apache.hadoop.yarn.sls.scheduler;
+
+public class TestTaskRunner {
+  private TaskRunner runner;
+  @Before
+  public void setUp() {
+    SingleTask.first = false;
+    SingleTask.latch = new CountDownLatch(1);
+    DualTask.first = false;
+    DualTask.last = false;
+    DualTask.latch = new CountDownLatch(1);
+    TriTask.first = false;
+    TriTask.middle = false;
+    TriTask.last = false;
+    TriTask.latch = new CountDownLatch(1);
+    MultiTask.first = false;
+    MultiTask.middle = 0;
+    MultiTask.last = false;
+    MultiTask.latch = new CountDownLatch(1);
+    PreStartTask.first = false;
+    PreStartTask.latch = new CountDownLatch(1);
+    runner = new TaskRunner();
+    runner.setQueueSize(5);
+  }
+  @After
+  public void cleanUp() throws InterruptedException {
+    runner.stop();
+  }
+  // The remaining code stays the same
+}
+```

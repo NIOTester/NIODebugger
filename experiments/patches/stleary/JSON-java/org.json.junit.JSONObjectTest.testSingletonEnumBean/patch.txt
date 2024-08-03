@@ -1,0 +1,45 @@
+```
+package org.json.junit;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
+public class JSONObjectTest {
+    @Before
+    public void setUp() {
+        SingletonEnum.getInstance().setSomeInt(0);
+        SingletonEnum.getInstance().setSomeString(null);
+    }
+
+    @SuppressWarnings("boxing")
+    @Test
+    public void testSingletonEnumBean() {
+        final JSONObject jo = new JSONObject(SingletonEnum.getInstance());
+        assertEquals(jo.keySet().toString(), 1, jo.length());
+        assertEquals(0, jo.get("someInt"));
+        assertEquals(null, jo.opt("someString"));
+        // Update the singleton values
+        SingletonEnum.getInstance().setSomeInt(42);
+        SingletonEnum.getInstance().setSomeString("Something");
+
+        final JSONObject jo2 = new JSONObject(SingletonEnum.getInstance());
+        assertEquals(2, jo2.length());
+        assertEquals(42, jo2.get("someInt"));
+        assertEquals("Something", jo2.get("someString"));
+        // ensure our original jo hasn't changed.
+        assertEquals(0, jo.get("someInt"));
+        assertEquals(null, jo.opt("someString"));
+        Util.checkJSONObjectsMaps(new ArrayList<JSONObject>(Arrays.asList(
+                jo, jo2
+        )));
+    }
+
+    @After
+    public void tearDown() {
+        // Reset the SingletonEnum instance
+        SingletonEnum.getInstance().setSomeInt(0);
+        SingletonEnum.getInstance().setSomeString(null);
+    }
+}
+```

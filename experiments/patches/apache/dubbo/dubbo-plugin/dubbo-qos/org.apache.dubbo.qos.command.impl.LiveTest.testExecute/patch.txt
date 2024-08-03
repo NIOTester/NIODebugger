@@ -1,0 +1,31 @@
+```java
+package org.apache.dubbo.qos.command.impl;
+
+class LiveTest {
+    private FrameworkModel frameworkModel;
+
+    @BeforeEach
+    public void setUp() {
+        frameworkModel = new FrameworkModel();
+    }
+
+    @AfterEach
+    public void reset() {
+        frameworkModel.destroy();
+        MockLivenessProbe.setCheckReturnValue(false);
+    }
+
+    @Test
+    void testExecute() {
+        Live live = new Live(frameworkModel);
+        CommandContext commandContext = new CommandContext("live");
+        String result = live.execute(commandContext, new String[0]);
+        Assertions.assertEquals(result, "false");
+        Assertions.assertEquals(commandContext.getHttpCode(), 503);
+        MockLivenessProbe.setCheckReturnValue(true);
+        result = live.execute(commandContext, new String[0]);
+        Assertions.assertEquals(result, "true");
+        Assertions.assertEquals(commandContext.getHttpCode(), 200);
+    }
+}
+```

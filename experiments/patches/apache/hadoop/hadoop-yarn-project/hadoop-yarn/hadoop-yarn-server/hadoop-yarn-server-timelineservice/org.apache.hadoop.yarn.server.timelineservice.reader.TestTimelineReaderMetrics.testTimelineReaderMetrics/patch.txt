@@ -1,0 +1,47 @@
+```java
+package org.apache.hadoop.yarn.server.timelineservice.reader;
+
+import org.apache.hadoop.metrics2.MetricsSystem;
+import org.apache.hadoop.metrics2.impl.MetricsSystemImpl;
+import org.apache.hadoop.metrics2.lib.DefaultMetricsSystem;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
+/**
+ * Test TimelineReaderMetrics.
+ */
+public class TestTimelineReaderMetrics {
+  private TimelineReaderMetrics metrics;
+  
+  @BeforeEach
+  void setup() {
+    MetricsSystem ms = DefaultMetricsSystem.instance();
+    if (ms.getSources().containsKey("TimelineReaderMetrics")) {
+        ms.unregisterSource("TimelineReaderMetrics");
+    }
+    metrics = TimelineReaderMetrics.getInstance();
+  }
+
+  @Test
+  public void testTimelineReaderMetrics() {
+    assertNotNull(metrics);
+    assertEquals(10,
+        metrics.getGetEntitiesSuccessLatency().getInterval());
+    assertEquals(10,
+        metrics.getGetEntitiesFailureLatency().getInterval());
+    assertEquals(10,
+        metrics.getGetEntityTypesSuccessLatency().getInterval());
+    assertEquals(10,
+        metrics.getGetEntityTypesFailureLatency().getInterval());
+  }
+  
+  @AfterEach
+  public void tearDown() {
+    TimelineReaderMetrics.destroy();
+  }
+}
+```

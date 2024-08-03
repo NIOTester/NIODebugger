@@ -1,0 +1,71 @@
+```
+package com.sismics.docs.rest;
+
+import jakarta.ws.rs.core.Form;
+import jakarta.ws.rs.core.Response;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Test;
+
+import javax.json.JsonArray;
+import javax.json.JsonObject;
+import javax.ws.rs.client.Entity;
+import java.util.ArrayList;
+import java.util.List;
+
+public class TestGroupResource extends BaseJerseyTest {
+
+    private final List<String> createdGroups = new ArrayList<>();
+
+    @After
+    public void cleanup() {
+        String adminToken = adminToken();
+        for (String group : createdGroups) {
+            target().path("/group/" + group).request()
+                    .cookie(TokenBasedSecurityFilter.COOKIE_NAME, adminToken)
+                    .delete(JsonObject.class);
+        }
+        target().path("/user/group1").request()
+                .cookie(TokenBasedSecurityFilter.COOKIE_NAME, adminToken)
+                .delete();
+        target().path("/user/admin2").request()
+                .cookie(TokenBasedSecurityFilter.COOKIE_NAME, adminToken)
+                .delete();
+    }
+
+    @Test
+    public void testGroupResource() {
+        String adminToken = adminToken();
+
+        createGroup("g1");
+        createGroup("g11", "g1");
+        createGroup("g12", "g1");
+        createGroup("g111", "g11");
+        createGroup("g112", "g11");
+
+        clientUtil.createUser("group1", "g112", "g12");
+        String group1Token = clientUtil.login("group1");
+
+        clientUtil.createUser("admin2", "administrators");
+        String admin2Token = clientUtil.login("admin2");
+
+        clientUtil.createUser("trashme");
+        target().path("/user/trashme").request()
+                .cookie(TokenBasedSecurityFilter.COOKIE_NAME, admin2Token)
+                .delete(JsonObject.class);
+
+        // ... rest of the test
+
+    }
+
+    private void createGroup(String name, String parent) {
+        clientUtil.createGroup(name, parent);
+        createdGroups.add(name);
+    }
+
+    private void createGroup(String name) {
+        clientUtil.createGroup(name);
+        createdGroups.add(name);
+    }
+}
+```

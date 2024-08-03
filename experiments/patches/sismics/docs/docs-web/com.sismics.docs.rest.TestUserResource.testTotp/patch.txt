@@ -1,0 +1,34 @@
+The error message shows that there is a HTTP 400 Bad Request error on creating the user. This usually occurs if the user already exists in the database. 
+
+To fix this issue, you may consider adding a method to delete the user before the test runs. Here is a sample code:
+
+```java
+public class TestUserResource extends BaseJerseyTest {
+    /**
+     * Clean up the test environment (remove users).
+     */
+    @Before
+    public void deleteUsers() {
+        // Login admin
+        String adminToken = adminToken();
+        // Delete totp1 user
+        Response response = target().path("/user/totp1").request()
+                .cookie(TokenBasedSecurityFilter.COOKIE_NAME, adminToken)
+                .delete();
+        // Check that the user was deleted
+        Assert.assertEquals(200, response.getStatus());
+    }
+
+    /**
+     * Test the user resource admin functions.
+     */
+    @Test
+    public void testTotp() {
+        // Your test code...
+    }
+}
+```
+
+Please note that the HTTP status code 200 is used to confirm that the user was deleted successfully. You may need to adjust this according to your API's specifications. 
+
+Also, please note that the `deleteUsers` method uses the `@Before` annotation which means it will be executed before each test method is run. This is to ensure that the test environment is clean before each test, not just the first one.

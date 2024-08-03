@@ -1,0 +1,36 @@
+Here's the corrected code:
+
+```java
+package com.sismics.docs.rest;
+
+import org.junit.Before;
+import org.junit.Test;
+
+/**
+ * Test the route model resource.
+ *
+ * @author bgamard
+ */
+public class TestRouteModelResource extends BaseJerseyTest {
+
+    @Before
+    public void setUp() {
+        // Delete the user "routeModel1" before each test
+        // To ensure that the test can run multiple times within the same JVM
+        String adminToken = adminToken();
+        target().path("/user/routeModel1").request()
+                .cookie(TokenBasedSecurityFilter.COOKIE_NAME, adminToken)
+                .delete();
+    }
+
+    /**
+     * Test the route model resource.
+     */
+    @Test
+    public void testRouteModelResource() {
+        // Existing test code...
+    }
+}
+```
+
+The `setUp` method annotated with `@Before` will run before each test method, so the "routeModel1" user will be deleted before each test, ensuring that the test can run multiple times within the same JVM.

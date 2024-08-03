@@ -1,0 +1,14 @@
+You can fix this by not setting `PROVIDER_APPLICATION_NAME` to null in the `tearDown()` method. 
+
+```java
+@AfterEach
+public void tearDown() throws IOException {
+    DubboBootstrap.reset();
+    // PROVIDER_APPLICATION_NAME = null;    Don't set this to null
+    serviceConfig = null;
+    // The exported service has been unexported
+    Assertions.assertTrue(serviceListener.getExportedServices().isEmpty());
+    logger.info(getClass().getSimpleName() + " testcase is ending...");
+    registryProtocolListener = null;
+}
+```

@@ -1,0 +1,101 @@
+Here is a fixed version of your test code. The problem was with the static state machine id ("TestStateMachine") being reused across test runs. In this fix, a new unique id is generated for every test run.
+
+```
+package com.alibaba.cola.test;
+
+import org.junit.Assert;
+import org.junit.Test;
+
+import java.util.UUID;
+
+/**
+ * StateMachineTest
+ *
+ * @author Frank Zhang
+ * @date 2020-02-08 12:19 PM
+ */
+public class StateMachineTest {
+    static enum States {
+        STATE1,
+        STATE2,
+        STATE3,
+        STATE4
+    }
+    static enum Events {
+        EVENT1,
+        EVENT2,
+        EVENT3,
+        EVENT4,
+        INTERNAL_EVENT
+    }
+    static class Context {
+        String operator = "frank";
+        String entityId = "123465";
+    }
+    @Test
+    public void testExternalNormal() {
+        String machineId = UUID.randomUUID().toString();
+        StateMachineBuilder<States, Events, Context> builder = StateMachineBuilderFactory.create();
+        builder.externalTransition()
+            .from(States.STATE1)
+            .to(States.STATE2)
+            .on(Events.EVENT1)
+            .when(checkCondition())
+            .perform(doAction());
+        StateMachine<States, Events, Context> stateMachine = builder.build(machineId);
+        States target = stateMachine.fireEvent(States.STATE1, Events.EVENT1, new Context());
+        Assert.assertEquals(States.STATE2, target);
+    }
+    private StateMachine<States, Events, Context> buildStateMachine(String machineId) {
+        StateMachineBuilder<States, Events, Context> builder = StateMachineBuilderFactory.create();
+        builder.externalTransition()
+            .from(States.STATE1)
+            .to(States.STATE2)
+            .on(Events.EVENT1)
+            .when(checkCondition())
+            .perform(doAction());
+        builder.internalTransition()
+            .within(States.STATE2)
+            .on(Events.INTERNAL_EVENT)
+            .when(checkCondition())
+            .perform(doAction());
+        builder.externalTransition()
+            .from(States.STATE2)
+            .to(States.STATE1)
+            .on(Events.EVENT2)
+            .when(checkCondition())
+            .perform(doAction());
+        builder.externalTransition()
+            .from(States.STATE1)
+            .to(States.STATE3)
+            .on(Events.EVENT3)
+            .when(checkCondition())
+            .perform(doAction());
+        builder.externalTransitions()
+            .fromAmong(States.STATE1, States.STATE2, States.STATE3)
+            .to(States.STATE4)
+            .on(Events.EVENT4)
+            .when(checkCondition())
+            .perform(doAction());
+        builder.build(machineId);
+        StateMachine<States, Events, Context> stateMachine = StateMachineFactory.get(machineId);
+        stateMachine.showStateMachine();
+        return stateMachine;
+    }
+    private Condition<Context> checkCondition() {
+        return new Condition<Context>() {
+            @Override
+            public boolean isSatisfied(Context context) {
+                System.out.println("Check condition : " + context);
+                return true;
+            }
+        };
+    }
+    private Action<States, Events, Context> doAction() {
+        return (from, to, event, ctx) -> {
+            System.out.println(
+                ctx.operator + " is operating " + ctx.entityId + " from:" + from + " to:" + to + " on:" + event);
+        };
+    }
+}
+```

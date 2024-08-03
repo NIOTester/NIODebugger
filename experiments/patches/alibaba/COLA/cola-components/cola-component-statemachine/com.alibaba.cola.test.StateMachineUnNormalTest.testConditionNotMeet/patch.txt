@@ -1,0 +1,38 @@
+You can fix the test by building a new state machine for each test run with unique id. This can be achieved by appending a timestamp to the state machine id. Here is the updated test:
+
+```java
+package com.alibaba.cola.test;
+
+import org.junit.Assert;
+import org.junit.Test;
+
+import java.time.Instant;
+
+public class StateMachineUnNormalTest {
+    @Test
+    public void testConditionNotMeet(){
+        String uniqueId = "NotMeetConditionMachine" + Instant.now().toEpochMilli();
+        StateMachineBuilder<StateMachineTest.States, StateMachineTest.Events, StateMachineTest.Context> builder = StateMachineBuilderFactory.create();
+        builder.externalTransition()
+                .from(StateMachineTest.States.STATE1)
+                .to(StateMachineTest.States.STATE2)
+                .on(StateMachineTest.Events.EVENT1)
+                .when(checkConditionFalse())
+                .perform(doAction());
+        StateMachine<StateMachineTest.States, StateMachineTest.Events, StateMachineTest.Context> stateMachine = builder.build(uniqueId);
+        StateMachineTest.States target = stateMachine.fireEvent(StateMachineTest.States.STATE1, StateMachineTest.Events.EVENT1, new StateMachineTest.Context());
+        Assert.assertEquals(StateMachineTest.States.STATE1,target);
+    }
+    private Condition<StateMachineTest.Context> checkCondition() {
+        return (ctx) -> {return true;};
+    }
+    private Condition<StateMachineTest.Context> checkConditionFalse() {
+        return (ctx) -> {return false;};
+    }
+    private Action<StateMachineTest.States, StateMachineTest.Events, StateMachineTest.Context> doAction() {
+        return (from, to, event, ctx)->{
+            System.out.println(ctx.operator+" is operating "+ctx.entityId+"from:"+from+" to:"+to+" on:"+event);
+        };
+    }
+}
+```

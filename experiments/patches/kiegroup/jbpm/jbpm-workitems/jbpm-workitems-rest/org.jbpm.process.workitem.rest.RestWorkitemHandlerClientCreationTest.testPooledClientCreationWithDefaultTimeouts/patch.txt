@@ -1,0 +1,31 @@
+The problem is that the `getNewPooledHttpClient()` method is not being called on the second execution of `executeWorkItem()`, because the `cachedClient` is not null after the first execution. This causes the `verify()` call to fail. 
+
+To fix this, we can clear the `cachedClient` after each test execution. Here's how to modify your test:
+
+```
+@Before
+public void setUp() {
+    RESTWorkItemHandler.HTTP_CLIENT_API_43 = httpClient43;
+    RESTWorkItemHandler.cachedClient = null; // Clear cached client
+}
+
+@Test
+public void testPooledClientCreationWithDefaultTimeouts() {
+    RESTWorkItemHandler handler = spy(RESTWorkItemHandler.class);
+    when(handler.getDoCacheClient()).thenReturn(true);
+    WorkItemImpl workItem = new WorkItemImpl();
+    workItem.setParameter("Url", serverURL);
+    workItem.setParameter("Method", "GET");
+    workItem.setParameter("Cookie", "name=value");
+    workItem.setParameter("CookiePath", "/");
+    WorkItemManager manager = new TestWorkItemManager();
+    handler.executeWorkItem(workItem, manager);
+    // second call to executeWorkItem
+    handler.executeWorkItem(workItem, manager);
+    verify(handler, times(2)).getHttpClient(anyInt(), anyInt(), anyString(), anyString(), anyString());
+    verify(handler, times(1)).getNewPooledHttpClient(anyInt(), anyInt());
+    assertNotNull(handler.cachedClient);
+    assertTrue(handler.cachedClient instanceof CloseableHttpClient);
+    assertNotNull(handler.cachedClient.getConnectionManager());
+}
+```

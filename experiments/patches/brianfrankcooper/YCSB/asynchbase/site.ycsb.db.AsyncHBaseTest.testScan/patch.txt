@@ -1,0 +1,104 @@
+```java
+package site.ycsb.db;
+/**
+ * Integration tests for the YCSB AsyncHBase client, using an HBase minicluster.
+ * These are the same as those for the hbase10 client.
+ */
+public class AsyncHBaseTest {
+  private final static String COLUMN_FAMILY = "cf";
+  private static HBaseTestingUtility testingUtil;
+  private AsyncHBaseClient client;
+  private Table table = null;
+  private String tableName;
+  private static boolean isWindows() {
+    final String os = System.getProperty("os.name");
+    return os.startsWith("Windows");
+  }
+  /**
+   * Creates a mini-cluster for use in these tests.
+   *
+   * This is a heavy-weight operation, so invoked only once for the test class.
+   */
+  @BeforeClass
+  public static void setUpClass() throws Exception {
+    // Minicluster setup fails on Windows with an UnsatisfiedLinkError.
+    // Skip if windows.
+    assumeTrue(!isWindows());
+    testingUtil = HBaseTestingUtility.createLocalHTU();
+    testingUtil.startMiniCluster();
+  }
+  /**
+   * Tears down mini-cluster.
+   */
+  @AfterClass
+  public static void tearDownClass() throws Exception {
+    if (testingUtil != null) {
+      testingUtil.shutdownMiniCluster();
+      testingUtil = null;
+    }
+  }
+  /**
+   * Sets up the mini-cluster for testing.
+   *
+   * We re-create the table for each test.
+   */
+  @Before
+  public void setUp() throws Exception {
+    Properties p = new Properties();
+    p.setProperty("columnfamily", COLUMN_FAMILY);
+    Measurements.setProperties(p);
+    final CoreWorkload workload = new CoreWorkload();
+    workload.init(p);
+    tableName = p.getProperty(TABLENAME_PROPERTY, TABLENAME_PROPERTY_DEFAULT);
+    table = testingUtil.createTable(TableName.valueOf(tableName), Bytes.toBytes(COLUMN_FAMILY));
+    final String zkQuorum = "127.0.0.1:" + testingUtil.getZkCluster().getClientPort();
+    p.setProperty("hbase.zookeeper.quorum", zkQuorum);
+    client = new AsyncHBaseClient();
+    client.setProperties(p);
+    client.init();
+  }
+  @After
+  public void tearDown() throws Exception {
+    if (client != null) {
+      client.cleanup();
+      client = null;
+    }
+    if (table != null) {
+      table.close();
+      table = null;
+    }
+    testingUtil.deleteTable(tableName);
+  }
+  @Test
+  public void testScan() throws Exception {
+    // Fill with data
+    final String colStr = "row_number";
+    final byte[] col = Bytes.toBytes(colStr);
+    final int n = 10;
+    final List<Put> puts = new ArrayList<Put>(n);
+    for(int i = 0; i < n; i++) {
+      final byte[] key = Bytes.toBytes(String.format("%05d", i));
+      final byte[] value = java.nio.ByteBuffer.allocate(4).putInt(i).array();
+      final Put p = new Put(key);
+      p.addColumn(Bytes.toBytes(COLUMN_FAMILY), col, value);
+      puts.add(p);
+    }
+    table.put(puts);
+    // Test
+    final Vector<HashMap<String, ByteIterator>> result =
+        new Vector<HashMap<String, ByteIterator>>();
+    // Scan 5 records, skipping the first
+    client.scan(tableName, "00001", 5, null, result);
+    assertEquals(5, result.size());
+    for(int i = 0; i < 5; i++) {
+      final HashMap<String, ByteIterator> row = result.get(i);
+      assertEquals(1, row.size());
+      assertTrue(row.containsKey(colStr));
+      final byte[] bytes = row.get(colStr).toArray();
+      final ByteBuffer buf = ByteBuffer.wrap(bytes);
+      final int rowNum = buf.getInt();
+      assertEquals(i + 1, rowNum);
+    }
+  }
+}
+```

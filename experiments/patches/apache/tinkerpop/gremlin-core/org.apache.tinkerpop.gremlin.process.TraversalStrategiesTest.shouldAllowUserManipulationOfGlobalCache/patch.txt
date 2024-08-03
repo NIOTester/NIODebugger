@@ -1,0 +1,38 @@
+To fix the test, you should move the initialization of the strategies from static blocks to a setup method. 
+
+Here is how you can do it:
+
+```java
+package org.apache.tinkerpop.gremlin.process;
+
+import org.junit.Before;
+import org.junit.Test;
+
+public class TraversalStrategiesTest {
+
+    @Before
+    public void setup(){
+        TraversalStrategies.GlobalCache.registerStrategies(TestGraph.class,
+                TraversalStrategies.GlobalCache.getStrategies(Graph.class).clone().addStrategies(new StrategyA(), new StrategyB()));
+        TraversalStrategies.GlobalCache.registerStrategies(TestGraphComputer.class,
+                TraversalStrategies.GlobalCache.getStrategies(GraphComputer.class).clone().addStrategies(new StrategyC()));
+    }
+
+    @Test
+    public void shouldAllowUserManipulationOfGlobalCache() {
+        // Your test code
+    }
+
+    public static class TestGraphComputer implements GraphComputer {
+        // Your code
+    }
+
+    public static class TestGraph implements Graph {
+        // Your code
+    }
+
+    // Rest of your classes and methods
+}
+```
+
+This setup method will run before each test, ensuring that the strategies are properly initialized every time. This will prevent state pollution and make the tests independent, allowing them to pass on subsequent runs.

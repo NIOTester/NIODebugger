@@ -1,0 +1,37 @@
+To fix this test, you can create a setup method that resets the Singleton instance before each test run. Here's how you can do it:
+
+```java
+package org.json.junit;
+
+import org.junit.Before;
+import org.junit.Test;
+
+public class JSONObjectTest {
+
+    @Before
+    public void setUp() {
+        Singleton.getInstance().setSomeInt(0);
+        Singleton.getInstance().setSomeString(null);
+    }
+
+    @SuppressWarnings("boxing")
+    @Test
+    public void testSingletonBean() {
+        final JSONObject jo = new JSONObject(Singleton.getInstance());
+        assertEquals(1, jo.length());
+        assertEquals(0, jo.get("someInt"));
+        assertEquals(null, jo.opt("someString"));
+        // Update the singleton values
+        Singleton.getInstance().setSomeInt(42);
+        Singleton.getInstance().setSomeString("Something");
+        final JSONObject jo2 = new JSONObject(Singleton.getInstance());
+        assertEquals(2, jo2.length());
+        assertEquals(42, jo2.get("someInt"));
+        assertEquals("Something", jo2.get("someString"));
+        // ensure our original jo hasn't changed.
+        assertEquals(0, jo.get("someInt"));
+        assertEquals(null, jo.opt("someString"));
+        Util.checkJSONObjectsMaps(new ArrayList<JSONObject>(Arrays.asList(jo, jo2)));
+    }
+}
+```

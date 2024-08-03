@@ -1,0 +1,8 @@
+The error is due to the static variable `statusUpdateTimes` not being reset after each test. You can fix this by adding a setup method with the `@Before` annotation to reset the `statusUpdateTimes` before each test. Here is the code:
+
+```java
+@Before
+public void setup() {
+  statusUpdateTimes = 0;
+}
+```

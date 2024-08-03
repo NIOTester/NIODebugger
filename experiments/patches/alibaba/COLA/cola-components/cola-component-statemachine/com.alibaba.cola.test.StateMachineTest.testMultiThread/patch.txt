@@ -1,0 +1,46 @@
+You could generate a random unique identifier for each StateMachine instance by using UUID:
+
+```java
+import java.util.UUID;
+
+public class StateMachineTest {
+    // ... existing code ...
+
+    @Test
+    public void testMultiThread() {
+        String machineId = UUID.randomUUID().toString();
+        buildStateMachine(machineId);
+        for (int i = 0; i < 10; i++) {
+            String id = machineId;
+            Thread thread = new Thread(() -> {
+                StateMachine<States, Events, Context> stateMachine = StateMachineFactory.get(id);
+                States target = stateMachine.fireEvent(States.STATE1, Events.EVENT1, new Context());
+                Assert.assertEquals(States.STATE2, target);
+            });
+            thread.start();
+        }
+        for (int i = 0; i < 10; i++) {
+            String id = machineId;
+            Thread thread = new Thread(() -> {
+                StateMachine<States, Events, Context> stateMachine = StateMachineFactory.get(id);
+                States target = stateMachine.fireEvent(States.STATE1, Events.EVENT4, new Context());
+                Assert.assertEquals(States.STATE4, target);
+            });
+            thread.start();
+        }
+        for (int i = 0; i < 10; i++) {
+            String id = machineId;
+            Thread thread = new Thread(() -> {
+                StateMachine<States, Events, Context> stateMachine = StateMachineFactory.get(id);
+                States target = stateMachine.fireEvent(States.STATE1, Events.EVENT3, new Context());
+                Assert.assertEquals(States.STATE3, target);
+            });
+            thread.start();
+        }
+    }
+
+    // ... existing code ...
+}
+```
+
+This way, each StateMachine instance will have a unique identifier, which should resolve your issue.

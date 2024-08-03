@@ -1,0 +1,181 @@
+```java
+package org.apache.hadoop.yarn.sls.scheduler;
+
+public class TestTaskRunner {
+  private TaskRunner runner;
+
+  @Before
+  public void setUp() {
+    runner = new TaskRunner();
+    runner.setQueueSize(5);
+  }
+
+  @After
+  public void cleanUp() throws InterruptedException {
+    runner.stop();
+  }
+
+  public static class SingleTask extends TaskRunner.Task {
+    public CountDownLatch latch = new CountDownLatch(1);
+    public boolean first;
+    public SingleTask(long startTime) {
+      super.init(startTime);
+    }
+
+    @Override
+    public void firstStep() {
+      if (first) {
+        Assert.fail();
+      }
+      first = true;
+      latch.countDown();
+    }
+
+    @Override
+    public void middleStep() {
+      Assert.fail();
+    }
+
+    @Override
+    public void lastStep() {
+      Assert.fail();
+    }
+  }
+
+  public static class DualTask extends TaskRunner.Task {
+    public CountDownLatch latch = new CountDownLatch(1);
+    public boolean first;
+    public boolean last;
+    public DualTask(long startTime, long endTime, long interval) {
+      super.init(startTime, endTime, interval);
+    }
+
+    @Override
+    public void firstStep() {
+      if (first) {
+        Assert.fail();
+      }
+      first = true;
+    }
+
+    @Override
+    public void middleStep() {
+      Assert.fail();
+    }
+
+    @Override
+    public void lastStep() {
+      if (last) {
+        Assert.fail();
+      }
+      last = true;
+      latch.countDown();
+    }
+  }
+
+  public static class TriTask extends TaskRunner.Task {
+    public CountDownLatch latch = new CountDownLatch(1);
+    public boolean first;
+    public boolean middle;
+    public boolean last;
+    public TriTask(long startTime, long endTime, long interval) {
+      super.init(startTime, endTime, interval);
+    }
+
+    @Override
+    public void firstStep() {
+      if (first) {
+        Assert.fail();
+      }
+      first = true;
+    }
+
+    @Override
+    public void middleStep() {
+      if (middle) {
+        Assert.fail();
+      }
+      middle = true;
+    }
+
+    @Override
+    public void lastStep() {
+      if (last) {
+        Assert.fail();
+      }
+      last = true;
+      latch.countDown();
+    }
+  }
+
+  public static class MultiTask extends TaskRunner.Task {
+    public CountDownLatch latch = new CountDownLatch(1);
+    public boolean first;
+    public int middle;
+    public boolean last;
+    public MultiTask(long startTime, long endTime, long interval) {
+      super.init(startTime, endTime, interval);
+    }
+
+    @Override
+    public void firstStep() {
+      if (first) {
+        Assert.fail();
+      }
+      first = true;
+    }
+
+    @Override
+    public void middleStep() {
+      middle++;
+    }
+
+    @Override
+    public void lastStep() {
+      if (last) {
+        Assert.fail();
+      }
+      last = true;
+      latch.countDown();
+    }
+  }
+
+  public static class PreStartTask extends TaskRunner.Task {
+    public CountDownLatch latch = new CountDownLatch(1);
+    public boolean first;
+    public PreStartTask(long startTime) {
+      super.init(startTime);
+    }
+
+    @Override
+    public void firstStep() {
+      if (first) {
+        Assert.fail();
+      }
+      first = true;
+      latch.countDown();
+    }
+
+    @Override
+    public void middleStep() {
+    }
+
+    @Override
+    public void lastStep() {
+    }
+  }
+
+  @Test
+  public void testPreStartQueueing() throws Exception {
+    PreStartTask task = new PreStartTask(210);
+    runner.schedule(task);
+    Thread.sleep(210);
+    runner.start();
+    long startedAt = System.currentTimeMillis();
+    task.latch.await(5000, TimeUnit.MILLISECONDS);
+    long runAt = System.currentTimeMillis();
+    Assert.assertTrue(task.first);
+    Assert.assertTrue(runAt - startedAt >= 200);
+  }
+}
+```

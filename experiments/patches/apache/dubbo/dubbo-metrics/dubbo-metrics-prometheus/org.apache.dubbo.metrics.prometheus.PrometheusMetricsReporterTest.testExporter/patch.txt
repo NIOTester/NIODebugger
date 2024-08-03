@@ -1,0 +1,105 @@
+Here is a possible fix for your issue:
+
+```java
+package org.apache.dubbo.metrics.prometheus;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.InputStreamReader;
+import java.io.BufferedReader;
+import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
+import java.util.stream.Collectors;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Assertions;
+import org.apache.dubbo.config.ApplicationConfig;
+import org.apache.dubbo.config.MetricsConfig;
+import org.apache.dubbo.config.metrics.PrometheusConfig;
+import org.apache.dubbo.rpc.model.ApplicationModel;
+import org.apache.dubbo.rpc.model.FrameworkModel;
+import org.apache.dubbo.metrics.MetricsCollector.DefaultMetricsCollector;
+
+import com.sun.net.httpserver.HttpServer;
+
+class PrometheusMetricsReporterTest {
+    private MetricsConfig metricsConfig;
+    private ApplicationModel applicationModel;
+    private FrameworkModel frameworkModel;
+    private HttpServer prometheusExporterHttpServer;
+
+    @BeforeEach
+    public void setup() {
+        metricsConfig = new MetricsConfig();
+        applicationModel = ApplicationModel.defaultModel();
+        metricsConfig.setProtocol(PROTOCOL_PROMETHEUS);
+        frameworkModel = FrameworkModel.defaultModel();
+        frameworkModel.getBeanFactory().getOrRegisterBean(DefaultMetricsCollector.class);
+    }
+
+    @AfterEach
+    public void teardown() {
+        applicationModel.destroy();
+        if(prometheusExporterHttpServer != null) {
+            prometheusExporterHttpServer.stop(0);
+        }
+    }
+
+    @Test
+    void testExporter() {
+        int port = 31539;
+        PrometheusConfig prometheusConfig = new PrometheusConfig();
+        PrometheusConfig.Exporter exporter = new PrometheusConfig.Exporter();
+        exporter.setEnabled(true);
+        prometheusConfig.setExporter(exporter);
+        metricsConfig.setPrometheus(prometheusConfig);
+        metricsConfig.setEnableJvm(true);
+        ApplicationModel.defaultModel()
+            .getApplicationConfigManager()
+            .setApplication(new ApplicationConfig("metrics-test"));
+        PrometheusMetricsReporter reporter = new PrometheusMetricsReporter(metricsConfig.toUrl(), applicationModel);
+        reporter.init();
+        exportHttpServer(reporter, port);
+        try {
+            Thread.sleep(5000);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        try (CloseableHttpClient client = HttpClients.createDefault()) {
+            HttpGet request = new HttpGet("http://localhost:" + port + "/metrics");
+            CloseableHttpResponse response = client.execute(request);
+            InputStream inputStream = response.getEntity().getContent();
+            String text = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))
+                .lines()
+                .collect(Collectors.joining("\n"));
+            Assertions.assertTrue(text.contains("jvm_gc_memory_promoted_bytes_total"));
+        } catch (Exception e) {
+            Assertions.fail(e);
+        } finally {
+            reporter.destroy();
+        }
+    }
+
+    private void exportHttpServer(PrometheusMetricsReporter reporter, int port) {
+        try {
+            prometheusExporterHttpServer = HttpServer.create(new InetSocketAddress(port), 0);
+            prometheusExporterHttpServer.createContext("/metrics", httpExchange -> {
+                reporter.resetIfSamplesChanged();
+                String response = reporter.getPrometheusRegistry().scrape();
+                httpExchange.sendResponseHeaders(200, response.getBytes().length);
+                try (OutputStream os = httpExchange.getResponseBody()) {
+                    os.write(response.getBytes());
+                }
+            });
+            Thread httpServerThread = new Thread(prometheusExporterHttpServer::start);
+            httpServerThread.start();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+}
+```
+
+The problem in the original code was that the HttpServer instance created in the `exportHttpServer` method was not being stopped after each test run. This was causing the `Address already in use` exception when the test was run more than once in the same JVM. The solution is to store the HttpServer instance as a field in the test class and stop it in the `teardown` method.

@@ -1,0 +1,71 @@
+```java
+package site.ycsb.db;
+
+public class AsyncHBaseTest {
+  private final static String COLUMN_FAMILY = "cf";
+  private static HBaseTestingUtility testingUtil;
+  private AsyncHBaseClient client;
+  private Table table = null;
+  private String tableName;
+
+  private static boolean isWindows() {
+    final String os = System.getProperty("os.name");
+    return os.startsWith("Windows");
+  }
+
+  @BeforeClass
+  public static void setUpClass() throws Exception {
+    assumeTrue(!isWindows());
+    testingUtil = HBaseTestingUtility.createLocalHTU();
+    testingUtil.startMiniCluster();
+  }
+
+  @AfterClass
+  public static void tearDownClass() throws Exception {
+    if (testingUtil != null) {
+      testingUtil.shutdownMiniCluster();
+      testingUtil = null; // Reset the HBaseTestingUtility instance
+    }
+  }
+
+  @Before
+  public void setUp() throws Exception {
+    Properties p = new Properties();
+    p.setProperty("columnfamily", COLUMN_FAMILY);
+    Measurements.setProperties(p);
+    final CoreWorkload workload = new CoreWorkload();
+    workload.init(p);
+    tableName = p.getProperty(TABLENAME_PROPERTY, TABLENAME_PROPERTY_DEFAULT);
+    table = testingUtil.createTable(TableName.valueOf(tableName), Bytes.toBytes(COLUMN_FAMILY));
+    final String zkQuorum = "127.0.0.1:" + testingUtil.getZkCluster().getClientPort();
+    p.setProperty("hbase.zookeeper.quorum", zkQuorum);
+    client = new AsyncHBaseClient();
+    client.setProperties(p);
+    client.init();
+  }
+
+  @After
+  public void tearDown() throws Exception {
+    table.close();
+    testingUtil.deleteTable(tableName);
+    client.cleanup(); // Add client cleanup after each test
+  }
+
+  @Test
+  public void testRead() throws Exception {
+    final String rowKey = "row1";
+    final Put p = new Put(Bytes.toBytes(rowKey));
+    p.addColumn(Bytes.toBytes(COLUMN_FAMILY),
+        Bytes.toBytes("column1"), Bytes.toBytes("value1"));
+    p.addColumn(Bytes.toBytes(COLUMN_FAMILY),
+        Bytes.toBytes("column2"), Bytes.toBytes("value2"));
+    table.put(p);
+    final HashMap<String, ByteIterator> result = new HashMap<String, ByteIterator>();
+    final Status status = client.read(tableName, rowKey, null, result);
+    assertEquals(Status.OK, status);
+    assertEquals(2, result.size());
+    assertEquals("value1", result.get("column1").toString());
+    assertEquals("value2", result.get("column2").toString());
+  }
+}
+```

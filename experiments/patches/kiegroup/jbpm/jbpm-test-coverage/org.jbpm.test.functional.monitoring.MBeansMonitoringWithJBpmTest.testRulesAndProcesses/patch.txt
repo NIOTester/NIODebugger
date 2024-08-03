@@ -1,0 +1,11 @@
+Adding 'kc.dispose()' at the end of the test function:
+
+```java
+    @Test
+    public void testRulesAndProcesses() throws Exception {
+        // ... existing test code ...
+
+        kc.dispose();
+    }
+```
+This will dispose of the KieContainer at the end of each test run, clearing up the shared state and allowing for subsequent test runs in the same JVM to succeed.

@@ -1,0 +1,14 @@
+```java
+// Delete user bob
+String bobAuthToken = clientUtil.login("bob");
+target().path("/user").request()
+        .cookie(TokenBasedSecurityFilter.COOKIE_NAME, bobAuthToken)
+        .delete();
+
+// Check the deletion
+Response response = target().path("/user/login").request()
+        .post(Entity.form(new Form()
+                .param("username", "bob")
+                .param("password", "12345678")));
+Assert.assertEquals(Status.FORBIDDEN, Status.fromStatusCode(response.getStatus()));
+```

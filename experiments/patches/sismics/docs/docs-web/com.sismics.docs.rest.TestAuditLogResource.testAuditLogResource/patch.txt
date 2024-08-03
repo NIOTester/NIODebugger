@@ -1,0 +1,31 @@
+```java
+package com.sismics.docs.rest;
+/**
+ * Test the audit log resource.
+ * 
+ * @author bgamard
+ */
+public class TestAuditLogResource extends BaseJerseyTest {
+    /**
+     * Test the audit log resource.
+     *
+     * @throws Exception e
+     */
+    @Test
+    public void testAuditLogResource() throws Exception {
+        // Login auditlog1
+        clientUtil.createUser("auditlog1");
+        String auditlog1Token = clientUtil.login("auditlog1");
+        
+        // ... rest of your test code ...
+
+        // Delete auditlog1
+        String adminToken = adminToken();
+        target().path("/user/auditlog1").request()
+                .cookie(TokenBasedSecurityFilter.COOKIE_NAME, adminToken)
+                .delete();
+    }
+
+    // ... rest of your class code ...
+}
+```

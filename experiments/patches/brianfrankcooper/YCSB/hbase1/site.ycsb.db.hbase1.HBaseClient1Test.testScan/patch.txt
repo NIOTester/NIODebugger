@@ -1,0 +1,82 @@
+```java
+package site.ycsb.db.hbase1;
+
+public class HBaseClient1Test {
+  private final static String COLUMN_FAMILY = "cf";
+  private static HBaseTestingUtility testingUtil;
+  private HBaseClient1 client;
+  private Table table = null;
+  private String tableName;
+  
+  private static boolean isWindows() {
+    final String os = System.getProperty("os.name");
+    return os.startsWith("Windows");
+  }
+
+  @BeforeClass
+  public static void setUpClass() throws Exception {
+    assumeTrue(!isWindows());
+    testingUtil = HBaseTestingUtility.createLocalHTU();
+    testingUtil.startMiniCluster();
+  }
+
+  @AfterClass
+  public static void tearDownClass() throws Exception {
+    if (testingUtil != null) {
+      testingUtil.shutdownMiniCluster();
+      testingUtil = null;
+    }
+  }
+
+  @Before
+  public void setUp() throws Exception {
+    client = new HBaseClient1();
+    client.setConfiguration(new Configuration(testingUtil.getConfiguration()));
+    Properties p = new Properties();
+    p.setProperty("columnfamily", COLUMN_FAMILY);
+    Measurements.setProperties(p);
+    final CoreWorkload workload = new CoreWorkload();
+    workload.init(p);
+    tableName = p.getProperty(TABLENAME_PROPERTY, TABLENAME_PROPERTY_DEFAULT);
+    table = testingUtil.createTable(TableName.valueOf(tableName), Bytes.toBytes(COLUMN_FAMILY));
+    client.setProperties(p);
+    client.init();
+  }
+
+  @After
+  public void tearDown() throws Exception {
+    table.close();
+    testingUtil.deleteTable(tableName);
+    client.cleanup();
+  }
+
+  @Test
+  public void testScan() throws Exception {
+    final String colStr = "row_number";
+    final byte[] col = Bytes.toBytes(colStr);
+    final int n = 10;
+    final List<Put> puts = new ArrayList<Put>(n);
+    for(int i = 0; i < n; i++) {
+      final byte[] key = Bytes.toBytes(String.format("%05d", i));
+      final byte[] value = java.nio.ByteBuffer.allocate(4).putInt(i).array();
+      final Put p = new Put(key);
+      p.addColumn(Bytes.toBytes(COLUMN_FAMILY), col, value);
+      puts.add(p);
+    }
+    table.put(puts);
+    final Vector<HashMap<String, ByteIterator>> result =
+        new Vector<HashMap<String, ByteIterator>>();
+    client.scan(tableName, "00001", 5, null, result);
+    assertEquals(5, result.size());
+    for(int i = 0; i < 5; i++) {
+      final HashMap<String, ByteIterator> row = result.get(i);
+      assertEquals(1, row.size());
+      assertTrue(row.containsKey(colStr));
+      final byte[] bytes = row.get(colStr).toArray();
+      final ByteBuffer buf = ByteBuffer.wrap(bytes);
+      final int rowNum = buf.getInt();
+      assertEquals(i + 1, rowNum);
+    }
+  }
+}
+```

@@ -1,0 +1,98 @@
+Here is the fixed version of the test:
+
+```java
+package com.alibaba.cola.test;
+/**
+ * StateMachineTest
+ *
+ * @author Frank Zhang
+ * @date 2020-02-08 12:19 PM
+ */
+public class StateMachineTest {
+    static String MACHINE_ID = "TestStateMachine";
+    static enum States {
+        STATE1,
+        STATE2,
+        STATE3,
+        STATE4
+    }
+    static enum Events {
+        EVENT1,
+        EVENT2,
+        EVENT3,
+        EVENT4,
+        INTERNAL_EVENT
+    }
+    static class Context {
+        String operator = "frank";
+        String entityId = "123465";
+    }
+    @Test
+    public void testInternalNormal() {
+        String uniqueMachineId = MACHINE_ID + System.currentTimeMillis();
+        StateMachineBuilder<States, Events, Context> builder = StateMachineBuilderFactory.create();
+        builder.internalTransition()
+            .within(States.STATE1)
+            .on(Events.INTERNAL_EVENT)
+            .when(checkCondition())
+            .perform(doAction());
+        StateMachine<States, Events, Context> stateMachine = builder.build(uniqueMachineId);
+        stateMachine.fireEvent(States.STATE1, Events.EVENT1, new Context());
+        States target = stateMachine.fireEvent(States.STATE1, Events.INTERNAL_EVENT, new Context());
+        Assert.assertEquals(States.STATE1, target);
+    }
+    private StateMachine<States, Events, Context> buildStateMachine(String machineId) {
+        StateMachineBuilder<States, Events, Context> builder = StateMachineBuilderFactory.create();
+        builder.externalTransition()
+            .from(States.STATE1)
+            .to(States.STATE2)
+            .on(Events.EVENT1)
+            .when(checkCondition())
+            .perform(doAction());
+        builder.internalTransition()
+            .within(States.STATE2)
+            .on(Events.INTERNAL_EVENT)
+            .when(checkCondition())
+            .perform(doAction());
+        builder.externalTransition()
+            .from(States.STATE2)
+            .to(States.STATE1)
+            .on(Events.EVENT2)
+            .when(checkCondition())
+            .perform(doAction());
+        builder.externalTransition()
+            .from(States.STATE1)
+            .to(States.STATE3)
+            .on(Events.EVENT3)
+            .when(checkCondition())
+            .perform(doAction());
+        builder.externalTransitions()
+            .fromAmong(States.STATE1, States.STATE2, States.STATE3)
+            .to(States.STATE4)
+            .on(Events.EVENT4)
+            .when(checkCondition())
+            .perform(doAction());
+        builder.build(machineId);
+        StateMachine<States, Events, Context> stateMachine = StateMachineFactory.get(machineId);
+        stateMachine.showStateMachine();
+        return stateMachine;
+    }
+    private Condition<Context> checkCondition() {
+        return new Condition<Context>() {
+            @Override
+            public boolean isSatisfied(Context context) {
+                System.out.println("Check condition : " + context);
+                return true;
+            }
+        };
+    }
+    private Action<States, Events, Context> doAction() {
+        return (from, to, event, ctx) -> {
+            System.out.println(
+                ctx.operator + " is operating " + ctx.entityId + " from:" + from + " to:" + to + " on:" + event);
+        };
+    }
+}
+```
+
+In this fix, we are creating a unique machine Id by appending the current time in milliseconds to the MACHINE_ID for each test run. This ensures that each run of the test will have a new machine Id and will not conflict with previous runs.

@@ -1,0 +1,68 @@
+```java
+package site.ycsb.db;
+
+public class AsyncHBaseTest {
+  private final static String COLUMN_FAMILY = "cf";
+  private static HBaseTestingUtility testingUtil;
+  private AsyncHBaseClient client;
+  private Table table = null;
+  private String tableName;
+  private static boolean isWindows() {
+    final String os = System.getProperty("os.name");
+    return os.startsWith("Windows");
+  }
+  @BeforeClass
+  public static void setUpClass() throws Exception {
+    assumeTrue(!isWindows());
+    testingUtil = HBaseTestingUtility.createLocalHTU();
+    testingUtil.startMiniCluster();
+  }
+  @AfterClass
+  public static void tearDownClass() throws Exception {
+    if (testingUtil != null) {
+      testingUtil.shutdownMiniCluster();
+      testingUtil = null; // Reset the utility to avoid side effects
+    }
+  }
+  @Before
+  public void setUp() throws Exception {
+    Properties p = new Properties();
+    p.setProperty("columnfamily", COLUMN_FAMILY);
+    Measurements.setProperties(p);
+    final CoreWorkload workload = new CoreWorkload();
+    workload.init(p);
+    tableName = p.getProperty(TABLENAME_PROPERTY, TABLENAME_PROPERTY_DEFAULT);
+    table = testingUtil.createTable(TableName.valueOf(tableName), Bytes.toBytes(COLUMN_FAMILY));
+    final String zkQuorum = "127.0.0.1:" + testingUtil.getZkCluster().getClientPort();
+    p.setProperty("hbase.zookeeper.quorum", zkQuorum);
+    client = new AsyncHBaseClient();
+    client.setProperties(p);
+    client.init();
+  }
+  @After
+  public void tearDown() throws Exception {
+    table.close();
+    testingUtil.deleteTable(tableName);
+    client.cleanup(); // Clean up client to avoid side effects
+    client = null;
+  }
+  @Test
+  public void testUpdate() throws Exception{
+    final String key = "key";
+    final HashMap<String, String> input = new HashMap<String, String>();
+    input.put("column1", "value1");
+    input.put("column2", "value2");
+    final Status status = client.insert(tableName, key, StringByteIterator.getByteIteratorMap(input));
+    assertEquals(Status.OK, status);
+    final Get get = new Get(Bytes.toBytes(key));
+    final Result result = this.table.get(get);
+    assertFalse(result.isEmpty());
+    assertEquals(2, result.size());
+    for(final java.util.Map.Entry<String, String> entry : input.entrySet()) {
+      assertEquals(entry.getValue(),
+          new String(result.getValue(Bytes.toBytes(COLUMN_FAMILY),
+            Bytes.toBytes(entry.getKey()))));
+    }
+  }
+}
+```

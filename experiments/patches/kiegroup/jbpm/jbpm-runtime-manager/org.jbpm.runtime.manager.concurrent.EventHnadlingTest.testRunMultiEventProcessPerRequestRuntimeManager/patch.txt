@@ -1,0 +1,75 @@
+```java
+package org.jbpm.runtime.manager.concurrent;
+
+public class EventHnadlingTest extends AbstractBaseTest {
+    private PoolingDataSourceWrapper pds;
+    private UserGroupCallback userGroupCallback;  
+    private RuntimeManager manager;
+    
+    @Before
+    public void setup() {
+    	TestUtil.cleanupSingletonSessionId();
+        pds = TestUtil.setupPoolingDataSource();
+        Properties properties= new Properties();
+        properties.setProperty("mary", "HR");
+        properties.setProperty("john", "HR");
+        userGroupCallback = new JBossUserGroupCallbackImpl(properties);
+    }
+    
+    @After
+    public void teardown() {
+        if (manager != null) {
+            manager.close();
+        }
+        pds.close();
+    }
+	
+    @Test
+    public void testRunMultiEventProcessPerRequestRuntimeManager() {
+        RuntimeEnvironment environment = RuntimeEnvironmentBuilder.Factory.get().newDefaultBuilder().userGroupCallback(userGroupCallback).addAsset(ResourceFactory.newClassPathResource("BPM2-MultiEventProcess.bpmn2"), ResourceType.BPMN2).get();
+        manager = RuntimeManagerFactory.Factory.get().newPerRequestRuntimeManager(environment);        
+        assertNotNull(manager);
+        RuntimeEngine runtime = manager.getRuntimeEngine(EmptyContext.get());
+        KieSession ksession = runtime.getKieSession();
+        
+        assertNotNull(ksession);       
+        ProcessInstance processInstance = ksession.startProcess("signalbroadcast");
+        manager.disposeRuntimeEngine(runtime);
+        
+        runtime = manager.getRuntimeEngine(EmptyContext.get());
+        ksession = runtime.getKieSession();
+        List<TaskSummary> tasks = runtime.getTaskService().getTasksAssignedAsPotentialOwner("john", "en-UK");
+        assertNotNull(tasks);
+        assertEquals(0, tasks.size());
+        ksession.signalEvent("Message-Msg", null);
+        manager.disposeRuntimeEngine(runtime);
+        
+        runtime = manager.getRuntimeEngine(EmptyContext.get());
+        ksession = runtime.getKieSession();
+        tasks = runtime.getTaskService().getTasksAssignedAsPotentialOwner("john", "en-UK");
+        assertNotNull(tasks);
+        assertEquals(1, tasks.size());
+        ksession.signalEvent("signal", null);
+        manager.disposeRuntimeEngine(runtime);
+        
+        runtime = manager.getRuntimeEngine(EmptyContext.get());
+        ksession = runtime.getKieSession();
+        tasks = runtime.getTaskService().getTasksAssignedAsPotentialOwner("john", "en-UK");
+        assertNotNull(tasks);
+        assertEquals(3, tasks.size());
+        
+        for (TaskSummary task : tasks) {
+        	runtime.getTaskService().start(task.getId(), "john");
+        	runtime.getTaskService().complete(task.getId(), "john", null);
+        }
+        
+        processInstance = ksession.getProcessInstance(processInstance.getId());
+        assertNull(processInstance);
+        
+        manager.disposeRuntimeEngine(runtime);
+        
+        // close manager which will close session maintained by the manager
+        manager.close();
+    }
+}
+```

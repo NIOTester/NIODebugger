@@ -1,0 +1,45 @@
+```java
+package org.apache.rocketmq.filter;
+
+public class FilterSpiTest {
+
+    static class NothingExpression implements Expression {
+        @Override
+        public Object evaluate(final EvaluationContext context) throws Exception {
+            return Boolean.TRUE;
+        }
+    }
+
+    static class NothingFilter implements FilterSpi {
+        @Override
+        public Expression compile(final String expr) throws MQFilterException {
+            return new NothingExpression();
+        }
+
+        @Override
+        public String ofType() {
+            return "Nothing";
+        }
+    }
+
+    @Test
+    public void testRegister() {
+        FilterFactory.INSTANCE.register(new NothingFilter());
+        Expression expr = null;
+        try {
+            expr = FilterFactory.INSTANCE.get("Nothing").compile("abc");
+        } catch (MQFilterException e) {
+            e.printStackTrace();
+            assertThat(Boolean.FALSE).isTrue();
+        }
+        assertThat(expr).isNotNull();
+        try {
+            assertThat((Boolean) expr.evaluate(new EmptyEvaluationContext())).isTrue();
+        } catch (Exception e) {
+            e.printStackTrace();
+            assertThat(Boolean.FALSE).isTrue();
+        }
+        FilterFactory.INSTANCE.unRegister("Nothing");
+    }
+}
+```

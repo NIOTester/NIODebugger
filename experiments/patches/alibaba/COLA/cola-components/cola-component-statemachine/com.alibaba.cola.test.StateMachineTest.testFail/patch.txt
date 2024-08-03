@@ -1,0 +1,38 @@
+There are two potential solutions to the problem, one is to reset the state machine before each test, and the other is to create a new state machine for each test. The following presents a way to create a new state machine for each test:
+
+```java
+package com.alibaba.cola.test;
+
+import org.junit.Before;
+import org.junit.Test;
+
+public class StateMachineTest {
+    private static final String MACHINE_ID = "TestStateMachine";
+
+    private String machineId;
+
+    @Before
+    public void setup() {
+        machineId = MACHINE_ID + "-" + System.nanoTime();
+    }
+
+    @Test
+    public void testFail() {
+        StateMachineBuilder<States, Events, Context> builder = StateMachineBuilderFactory.create();
+        builder.externalTransition()
+            .from(States.STATE1)
+            .to(States.STATE2)
+            .on(Events.EVENT1)
+            .when(checkCondition())
+            .perform(doAction());
+        builder.setFailCallback(new AlertFailCallback<>());
+        StateMachine<States, Events, Context> stateMachine = builder.build(machineId);
+        Assert.assertThrows(TransitionFailException.class,
+            () -> stateMachine.fireEvent(States.STATE2, Events.EVENT1, new Context()));
+    }
+
+    // other methods...
+}
+```
+
+In the `setup` method, a unique `machineId` is generated for each test by appending the current time in nanoseconds to the `MACHINE_ID` constant. This ensures that each test will have its own state machine.

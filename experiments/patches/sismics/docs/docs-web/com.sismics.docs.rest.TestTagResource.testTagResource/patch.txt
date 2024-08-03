@@ -1,0 +1,15 @@
+```java
+@Test
+public void testTagResource() {
+    // Login tag1
+    String tag1Token = null;
+    try {
+        clientUtil.createUser("tag1");
+        tag1Token = clientUtil.login("tag1");
+    } catch(Exception ex) {
+        // User already exists
+        tag1Token = clientUtil.login("tag1");
+    }
+    // ... rest of the code
+}
+```

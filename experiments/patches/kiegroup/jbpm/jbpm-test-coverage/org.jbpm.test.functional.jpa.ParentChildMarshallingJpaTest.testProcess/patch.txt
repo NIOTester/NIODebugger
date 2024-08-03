@@ -1,0 +1,37 @@
+```java
+package org.jbpm.test.functional.jpa;
+
+public class ParentChildMarshallingJpaTest extends JbpmTestCase {
+    private EntityManagerFactory emfDomain;
+    public ParentChildMarshallingJpaTest() {
+        super(true, true);
+    }
+    
+    @After
+    public void tearDown() {
+        clearDatabase();
+        manager.close();
+    }
+
+    @Test
+    public void testProcess() throws Exception {
+        // ... rest of the test code ...
+        manager.disposeRuntimeEngine(runtime);
+        // Check!
+        EntityManager em = emfDomain.createEntityManager();
+        int size = em.createQuery("select i from Person i").getResultList().size();
+        assertEquals(1, size);
+        // close manager which will close session maintained by the manager
+        manager.close();
+    }
+    
+    private void clearDatabase() {
+        EntityManager em = emfDomain.createEntityManager();
+        em.getTransaction().begin();
+        em.createQuery("DELETE FROM Application WHERE person IS NOT NULL").executeUpdate();
+        em.createQuery("DELETE FROM Person").executeUpdate();
+        em.getTransaction().commit();
+        em.close();
+    }
+}
+```

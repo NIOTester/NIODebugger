@@ -1,0 +1,15 @@
+The problem appears to be with the tearDown method, where you're setting the PROVIDER_APPLICATION_NAME to null. This would work for the first run as it's being set in the setUp method, but for all subsequent tests, it's already null from the previous tearDown method and isn't being set again. Try removing the PROVIDER_APPLICATION_NAME = null; line from the tearDown method, like so:
+
+```java
+@AfterEach
+public void tearDown() throws IOException {
+    DubboBootstrap.reset();
+    // PROVIDER_APPLICATION_NAME = null; // remove this line
+    serviceConfig = null;
+    // The exported service has been unexported
+    Assertions.assertTrue(serviceListener.getExportedServices().isEmpty());
+    serviceListener = null;
+    logger.info(getClass().getSimpleName() + " testcase is ending...");
+}
+```
+This way, the PROVIDER_APPLICATION_NAME remains the same for all tests, and doesn't become null after the first one.

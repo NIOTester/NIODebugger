@@ -1,0 +1,77 @@
+```
+package site.ycsb.db;
+/**
+ * Integration tests for the YCSB AsyncHBase client, using an HBase minicluster.
+ * These are the same as those for the hbase10 client.
+ */
+public class AsyncHBaseTest {
+  private final static String COLUMN_FAMILY = "cf";
+  private static HBaseTestingUtility testingUtil;
+  private AsyncHBaseClient client;
+  private Table table = null;
+  private String tableName;
+  private static boolean isWindows() {
+    final String os = System.getProperty("os.name");
+    return os.startsWith("Windows");
+  }
+  /**
+   * Creates a mini-cluster for use in these tests.
+   *
+   * This is a heavy-weight operation, so invoked only once for the test class.
+   */
+  @BeforeClass
+  public static void setUpClass() throws Exception {
+    // Minicluster setup fails on Windows with an UnsatisfiedLinkError.
+    // Skip if windows.
+    assumeTrue(!isWindows());
+    testingUtil = HBaseTestingUtility.createLocalHTU();
+    testingUtil.startMiniCluster();
+  }
+  /**
+   * Tears down mini-cluster.
+   */
+  @AfterClass
+  public static void tearDownClass() throws Exception {
+    if (testingUtil != null) {
+      testingUtil.shutdownMiniCluster();
+      testingUtil = null;
+    }
+  }
+  /**
+   * Sets up the mini-cluster for testing.
+   *
+   * We re-create the table for each test.
+   */
+  @Before
+  public void setUp() throws Exception {
+    Properties p = new Properties();
+    p.setProperty("columnfamily", COLUMN_FAMILY);
+    Measurements.setProperties(p);
+    final CoreWorkload workload = new CoreWorkload();
+    workload.init(p);
+    tableName = p.getProperty(TABLENAME_PROPERTY, TABLENAME_PROPERTY_DEFAULT);
+    table = testingUtil.createTable(TableName.valueOf(tableName), Bytes.toBytes(COLUMN_FAMILY));
+    final String zkQuorum = "127.0.0.1:" + testingUtil.getZkCluster().getClientPort();
+    p.setProperty("hbase.zookeeper.quorum", zkQuorum);
+    client = new AsyncHBaseClient();
+    client.setProperties(p);
+    client.init();
+  }
+  @After
+  public void tearDown() throws Exception {
+    if (client != null) {
+      client.cleanup();
+    }
+    if (table != null) {
+      table.close();
+    }
+    testingUtil.deleteTable(tableName);
+  }
+  @Test
+  public void testReadMissingRow() throws Exception {
+    final HashMap<String, ByteIterator> result = new HashMap<String, ByteIterator>();
+    final Status status = client.read(tableName, "Missing row", null, result);
+    assertEquals(Status.NOT_FOUND, status);
+    assertEquals(0, result.size());
+  }
+```

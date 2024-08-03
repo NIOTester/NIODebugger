@@ -1,0 +1,93 @@
+```
+package com.sismics.docs.rest;
+import org.junit.jupiter.api.AfterEach;
+
+/**
+ * Test the app resource.
+ * 
+ * @author jtremeaux
+ */
+public class TestAppResource extends BaseJerseyTest {
+    /**
+     * Test the API resource.
+     */
+    /**
+     * Test the log resource.
+     */
+    /**
+     * Test the guest login.
+     */
+    @Test
+    public void testGuestLogin() {
+        // Login admin
+        String adminToken = adminToken();
+        // Try to login as guest
+        Response response = target().path("/user/login").request()
+                .post(Entity.form(new Form()
+                        .param("username", "guest")));
+        Assert.assertEquals(Status.FORBIDDEN.getStatusCode(), response.getStatus());
+        // Enable guest login
+        target().path("/app/guest_login").request()
+                .cookie(TokenBasedSecurityFilter.COOKIE_NAME, adminToken)
+                .post(Entity.form(new Form()
+                        .param("enabled", "true")), JsonObject.class);
+        // Login as guest
+        String guestToken = clientUtil.login("guest", "", false);
+        // Guest cannot delete himself
+        response = target().path("/user").request()
+                .cookie(TokenBasedSecurityFilter.COOKIE_NAME, guestToken)
+                .delete();
+        Assert.assertEquals(Status.BAD_REQUEST.getStatusCode(), response.getStatus());
+        // Guest cannot see opened sessions
+        JsonObject json = target().path("/user/session").request()
+                .cookie(TokenBasedSecurityFilter.COOKIE_NAME, guestToken)
+                .get(JsonObject.class);
+        Assert.assertEquals(0, json.getJsonArray("sessions").size());
+        // Guest cannot delete opened sessions
+        response = target().path("/user/session").request()
+                .cookie(TokenBasedSecurityFilter.COOKIE_NAME, guestToken)
+                .delete();
+        Assert.assertEquals(Status.FORBIDDEN.getStatusCode(), response.getStatus());
+        // Guest cannot enable TOTP
+        response = target().path("/user/enable_totp").request()
+                .cookie(TokenBasedSecurityFilter.COOKIE_NAME, guestToken)
+                .post(Entity.form(new Form()));
+        Assert.assertEquals(Status.FORBIDDEN.getStatusCode(), response.getStatus());
+        // Guest cannot disable TOTP
+        response = target().path("/user/disable_totp").request()
+                .cookie(TokenBasedSecurityFilter.COOKIE_NAME, guestToken)
+                .post(Entity.form(new Form()));
+        Assert.assertEquals(Status.FORBIDDEN.getStatusCode(), response.getStatus());
+        // Guest cannot update itself
+        response = target().path("/user").request()
+                .cookie(TokenBasedSecurityFilter.COOKIE_NAME, guestToken)
+                .post(Entity.form(new Form()));
+        Assert.assertEquals(Status.FORBIDDEN.getStatusCode(), response.getStatus());
+        // Guest can see its documents
+        target().path("/document/list").request()
+                .cookie(TokenBasedSecurityFilter.COOKIE_NAME, guestToken)
+                .get(JsonObject.class);
+    }
+    
+    @AfterEach
+    public void tearDown() {
+        // Login admin
+        String adminToken = adminToken();
+        // Disable guest login
+        target().path("/app/guest_login").request()
+        	.cookie(TokenBasedSecurityFilter.COOKIE_NAME, adminToken)
+        	.post(Entity.form(new Form()
+                 	.param("enabled", "false")), JsonObject.class);
+    }
+
+    /**
+     * Test SMTP configuration changes.
+     */
+    /**
+     * Test inbox scanning.
+     */
+    /**
+     * Test the LDAP authentication.
+     */
+}
+```

@@ -1,0 +1,41 @@
+```java
+package com.sismics.docs.rest;
+
+import org.junit.Test;
+
+/**
+ * Test of the security layer.
+ * 
+ * @author jtremeaux
+ */
+public class TestSecurity extends BaseJerseyTest {
+    /**
+     * Test of the security layer.
+     */
+    @Test
+    public void testHeaderBasedAuthentication() {
+        clientUtil.createUser("header_auth_test");
+        Assert.assertEquals(Status.FORBIDDEN.getStatusCode(), target()
+                .path("/user/session")
+                .request()
+                .get()
+                .getStatus());
+        Assert.assertEquals(Status.OK.getStatusCode(), target()
+                .path("/user/session")
+                .request()
+                .header(HeaderBasedSecurityFilter.AUTHENTICATED_USER_HEADER, "header_auth_test")
+                .get()
+                .getStatus());
+        Assert.assertEquals(Status.FORBIDDEN.getStatusCode(), target()
+                .path("/user/session")
+                .request()
+                .header(HeaderBasedSecurityFilter.AUTHENTICATED_USER_HEADER, "idontexist")
+                .get()
+                .getStatus());
+        // Delete header_auth_test
+        target().path("/user/header_auth_test").request()
+                .cookie(TokenBasedSecurityFilter.COOKIE_NAME, adminToken())
+                .delete();
+    }
+}
+```

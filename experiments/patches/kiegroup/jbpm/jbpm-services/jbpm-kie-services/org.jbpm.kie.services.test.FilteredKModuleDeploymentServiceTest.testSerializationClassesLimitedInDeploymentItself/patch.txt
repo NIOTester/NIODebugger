@@ -1,0 +1,37 @@
+```java
+@Test
+public void testSerializationClassesLimitedInDeploymentItself() {
+    String groupId = "org.test";
+    String artifactId = "jbpm-kie-services-filter-test";
+    String version = VERSION;
+    FluentKieModuleDeploymentHelper.newFluentInstance()
+       .setGroupId(groupId)
+       .setArtifactId(artifactId)
+       .setVersion(version)
+       .addClass(Building.class, House.class, Person.class, OtherPerson.class, Thing.class)
+       .createKieJarAndDeployToMaven();
+    KModuleDeploymentUnit limitDeploymentUnit = new KModuleDeploymentUnit(groupId, artifactId, version);
+    FluentKieModuleDeploymentHelper.newFluentInstance()
+       .setGroupId(groupId)
+       .setArtifactId(artifactId + "-all")
+       .setVersion(version)
+       .addClass(Building.class, House.class, Person.class, OtherPerson.class, Thing.class)
+       .createKieJarAndDeployToMaven();
+    KModuleDeploymentUnit allDeploymentUnit = new KModuleDeploymentUnit(groupId, artifactId + "-all", version);
+    configureServices();
+    DeploymentDescriptor depDesc = new DeploymentDescriptorImpl().getBuilder()
+       .setLimitSerializationClasses(true)
+       .get();
+    limitDeploymentUnit.setDeploymentDescriptor(depDesc);
+    deploymentService.deploy(limitDeploymentUnit);
+    verifyDeployedUnitContainsCorrectClasses(limitDeploymentUnit);
+    deploymentService.getDeployedUnit(limitDeploymentUnit.getIdentifier()).getRuntimeManager().close();
+    depDesc = new DeploymentDescriptorImpl().getBuilder()
+       .setLimitSerializationClasses(false)
+       .get();
+    allDeploymentUnit.setDeploymentDescriptor(depDesc);
+    deploymentService.deploy(allDeploymentUnit);
+    verifyDeployedUnitContainsCorrectClasses(allDeploymentUnit);
+    deploymentService.getDeployedUnit(allDeploymentUnit.getIdentifier()).getRuntimeManager().close();
+}
+```

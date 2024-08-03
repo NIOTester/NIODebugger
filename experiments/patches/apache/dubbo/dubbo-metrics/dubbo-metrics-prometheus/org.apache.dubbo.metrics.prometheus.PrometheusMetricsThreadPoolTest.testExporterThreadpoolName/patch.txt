@@ -1,0 +1,88 @@
+```java
+package org.apache.dubbo.metrics.prometheus;
+
+import com.sun.net.httpserver.HttpServer;
+
+public class PrometheusMetricsThreadPoolTest {
+    private ApplicationModel applicationModel;
+    private MetricsConfig metricsConfig;
+    private DefaultMetricsCollector metricsCollector;
+    private HttpServer prometheusExporterHttpServer;
+
+    @BeforeEach
+    public void setup() {
+        applicationModel = ApplicationModel.defaultModel();
+        ApplicationConfig config = new ApplicationConfig();
+        config.setName("MockMetrics");
+        applicationModel.getApplicationConfigManager().setApplication(config);
+        metricsConfig = new MetricsConfig();
+        metricsConfig.setProtocol(PROTOCOL_PROMETHEUS);
+        metricsCollector = applicationModel.getBeanFactory().getOrRegisterBean(DefaultMetricsCollector.class);
+    }
+
+    @AfterEach
+    public void teardown() {
+        applicationModel.destroy();
+        if (prometheusExporterHttpServer != null) {
+            prometheusExporterHttpServer.stop(0);
+        }
+    }
+
+    @Test
+    void testExporterThreadpoolName() {
+        int port = 30899;
+        PrometheusConfig prometheusConfig = new PrometheusConfig();
+        PrometheusConfig.Exporter exporter = new PrometheusConfig.Exporter();
+        exporter.setEnabled(true);
+        prometheusConfig.setExporter(exporter);
+        metricsConfig.setPrometheus(prometheusConfig);
+        metricsConfig.setEnableJvm(false);
+        metricsCollector.setCollectEnabled(true);
+        metricsConfig.setEnableThreadpool(true);
+        metricsCollector.collectApplication();
+        PrometheusMetricsReporter reporter = new PrometheusMetricsReporter(metricsConfig.toUrl(), applicationModel);
+        reporter.init();
+        exportHttpServer(reporter, port);
+        try {
+            Thread.sleep(5000);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        if (metricsConfig.getEnableThreadpool()) {
+            metricsCollector.registryDefaultSample();
+        }
+        try (CloseableHttpClient client = HttpClients.createDefault()) {
+            HttpGet request = new HttpGet("http://localhost:" + port + "/metrics");
+            CloseableHttpResponse response = client.execute(request);
+            InputStream inputStream = response.getEntity().getContent();
+            String text = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))
+                    .lines()
+                    .collect(Collectors.joining("\n"));
+            Assertions.assertTrue(text.contains("dubbo_thread_pool_core_size"));
+            Assertions.assertTrue(text.contains("dubbo_thread_pool_thread_count"));
+        } catch (Exception e) {
+            Assertions.fail(e);
+        } finally {
+            reporter.destroy();
+        }
+    }
+
+    private void exportHttpServer(PrometheusMetricsReporter reporter, int port) {
+        try {
+            prometheusExporterHttpServer = HttpServer.create(new InetSocketAddress(port), 0);
+            prometheusExporterHttpServer.createContext("/metrics", httpExchange -> {
+                reporter.resetIfSamplesChanged();
+                String response = reporter.getPrometheusRegistry().scrape();
+                httpExchange.sendResponseHeaders(200, response.getBytes().length);
+                try (OutputStream os = httpExchange.getResponseBody()) {
+                    os.write(response.getBytes());
+                }
+            });
+            Thread httpServerThread = new Thread(prometheusExporterHttpServer::start);
+            httpServerThread.start();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+}
+```

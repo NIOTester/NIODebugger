@@ -1,0 +1,29 @@
+```java
+package site.ycsb.db.hbase1;
+
+public class HBaseClient1Test {
+  // your other code here
+
+  @AfterClass
+  public static void tearDownClass() throws Exception {
+    if (testingUtil != null) {
+      testingUtil.shutdownMiniCluster();
+      testingUtil = null;  // Added this line to prevent state pollution
+    }
+  }
+
+  @Before
+  public void setUp() throws Exception {
+    // your setup code here
+  }
+
+  @After
+  public void tearDown() throws Exception {
+    table.close();
+    testingUtil.deleteTable(tableName);
+    client.cleanup(); // Cleanup
+  }
+
+  // your other code here
+}
+```

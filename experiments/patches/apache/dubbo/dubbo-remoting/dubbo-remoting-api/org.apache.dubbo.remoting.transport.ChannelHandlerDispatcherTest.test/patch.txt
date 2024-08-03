@@ -1,0 +1,109 @@
+```java
+package org.apache.dubbo.remoting.transport;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+
+import java.util.Collection;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.mock;
+
+public class ChannelHandlerDispatcherTest {
+    @AfterEach
+    public void tearDown() {
+        MockChannelHandler.reset();
+    }
+
+    @Test
+    public void test() {
+        ChannelHandlerDispatcher channelHandlerDispatcher = new ChannelHandlerDispatcher();
+        MockChannelHandler channelHandler1 = new MockChannelHandler();
+        MockChannelHandler channelHandler2 = new MockChannelHandler();
+        channelHandlerDispatcher.addChannelHandler(channelHandler1);
+        channelHandlerDispatcher.addChannelHandler(channelHandler2);
+        Collection<ChannelHandler> channelHandlers = channelHandlerDispatcher.getChannelHandlers();
+        assertTrue(channelHandlers.contains(channelHandler1));
+        assertTrue(channelHandlers.contains(channelHandler2));
+        Channel channel = mock(Channel.class);
+        channelHandlerDispatcher.sent(channel, "test");
+        channelHandlerDispatcher.connected(channel);
+        channelHandlerDispatcher.disconnected(channel);
+        channelHandlerDispatcher.caught(channel, null);
+        channelHandlerDispatcher.received(channel, "test");
+        assertEquals(MockChannelHandler.getSentCount(), 2);
+        assertEquals(MockChannelHandler.getConnectedCount(), 2);
+        assertEquals(MockChannelHandler.getDisconnectedCount(), 2);
+        assertEquals(MockChannelHandler.getCaughtCount(), 2);
+        assertEquals(MockChannelHandler.getReceivedCount(), 2);
+        channelHandlerDispatcher = channelHandlerDispatcher.removeChannelHandler(channelHandler1);
+        assertFalse(channelHandlerDispatcher.getChannelHandlers().contains(channelHandler1));
+    }
+}
+
+class MockChannelHandler extends ChannelHandlerAdapter {
+    private static int sentCount = 0;
+    private static int connectedCount = 0;
+    private static int disconnectedCount = 0;
+    private static int receivedCount = 0;
+    private static int caughtCount = 0;
+
+    @Override
+    public void connected(Channel channel) throws RemotingException {
+        connectedCount++;
+        super.connected(channel);
+    }
+
+    @Override
+    public void disconnected(Channel channel) throws RemotingException {
+        disconnectedCount++;
+        super.disconnected(channel);
+    }
+
+    @Override
+    public void sent(Channel channel, Object message) throws RemotingException {
+        sentCount++;
+        super.sent(channel, message);
+    }
+
+    @Override
+    public void received(Channel channel, Object message) throws RemotingException {
+        receivedCount++;
+        super.received(channel, message);
+    }
+
+    @Override
+    public void caught(Channel channel, Throwable exception) throws RemotingException {
+        caughtCount++;
+        super.caught(channel, exception);
+    }
+
+    public static int getSentCount() {
+        return sentCount;
+    }
+
+    public static int getConnectedCount() {
+        return connectedCount;
+    }
+
+    public static int getDisconnectedCount() {
+        return disconnectedCount;
+    }
+
+    public static int getReceivedCount() {
+        return receivedCount;
+    }
+
+    public static int getCaughtCount() {
+        return caughtCount;
+    }
+
+    public static void reset() {
+        sentCount = 0;
+        connectedCount = 0;
+        disconnectedCount = 0;
+        receivedCount = 0;
+        caughtCount = 0;
+    }
+}
+```

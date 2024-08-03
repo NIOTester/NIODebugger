@@ -1,0 +1,34 @@
+```
+package org.jbpm.test.regression.async;
+
+public class AsyncWIHOnOracleTest extends JbpmAsyncJobTestCase {
+    // ... rest of the code is unchanged ...
+
+    @Override
+    @After
+    public void tearDown() {
+        try {
+            CounterCommand.resetCounter();
+            super.tearDown();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    public static class CounterCommand implements Command {
+        private static int counter = 0;
+        @Override
+        public ExecutionResults execute(CommandContext commandContext) throws Exception {
+            ++counter;
+            return new ExecutionResults();
+        }
+        public static int getCounter() {
+            return counter;
+        }
+        
+        public static void resetCounter() {
+            counter = 0;
+        }
+    }
+}
+```

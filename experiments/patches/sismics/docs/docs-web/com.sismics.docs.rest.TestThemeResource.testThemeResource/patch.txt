@@ -1,0 +1,48 @@
+```java
+package com.sismics.docs.rest;
+
+public class TestThemeResource extends BaseJerseyTest {
+    @Test
+    public void testThemeResource() throws Exception {
+        // Login admin
+        String adminToken = adminToken();
+        // Get the stylesheet anonymously
+        String stylesheet = target().path("/theme/stylesheet").request()
+                .get(String.class);
+        Assert.assertTrue(stylesheet.contains("background-color: #ffffff;"));
+        // Get the theme configuration anonymously
+        JsonObject json = target().path("/theme").request()
+                .get(JsonObject.class);
+        Assert.assertEquals("Teedy", json.getString("name"));
+        Assert.assertEquals("#ffffff", json.getString("color"));
+        Assert.assertEquals("", json.getString("css"));
+        // Update the main color as admin
+        target().path("/theme").request()
+                .cookie(TokenBasedSecurityFilter.COOKIE_NAME, adminToken)
+                .post(Entity.form(new Form()
+                        .param("color", "#ff0000")
+                .param("name", "My App")
+                .param("css", ".body { content: 'Custom CSS'; }")), JsonObject.class);
+        // Get the stylesheet anonymously
+        stylesheet = target().path("/theme/stylesheet").request()
+                .get(String.class);
+        Assert.assertTrue(stylesheet.contains("background-color: #ff0000;"));
+        Assert.assertTrue(stylesheet.contains("Custom CSS"));
+        // Get the theme configuration anonymously
+        json = target().path("/theme").request()
+                .get(JsonObject.class);
+        Assert.assertEquals("My App", json.getString("name"));
+        Assert.assertEquals("#ff0000", json.getString("color"));
+        Assert.assertEquals(".body { content: 'Custom CSS'; }", json.getString("css"));
+        // Change the logo
+        // Rest of the code...
+        // Reset the main color as admin
+        target().path("/theme").request()
+                .cookie(TokenBasedSecurityFilter.COOKIE_NAME, adminToken)
+                .post(Entity.form(new Form()
+                        .param("color", "#ffffff")
+                .param("name", "Teedy")
+                .param("css", "")), JsonObject.class);
+    }
+}
+```

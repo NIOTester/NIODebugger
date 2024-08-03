@@ -1,0 +1,14 @@
+You can fix this issue by making each test run use a unique class name. You can achieve that by appending a random UUID to the class name. Here is the modified code:
+
+```java
+@Test
+void test() throws Exception {
+    ClassGenerator cg = ClassGenerator.newInstance();
+    // add className, interface, superClass
+    String className = BaseClass.class.getPackage().getName() + ".TestClass" + UUID.randomUUID().toString().replace("-", "");
+    cg.setClassName(className);
+    // rest of your code remains the same
+}
+```
+
+This way, every time the test runs, it generates a unique class name, which should prevent the test from failing in the subsequent runs.

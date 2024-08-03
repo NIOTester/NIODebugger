@@ -1,0 +1,12 @@
+```
+package io.vertx.core;
+
+public class DeploymentTest extends VertxTestBase {
+  public void setUp() throws Exception {
+    super.setUp();
+    TestVerticle.instanceCount.set(0);
+    ReferenceSavingMyVerticle.myVerticles.clear();
+  }
+  // ... rest of the test code stays the same ...
+}
+```

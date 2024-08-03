@@ -1,0 +1,17 @@
+You can reset the counters by adding these lines in your tearDown method after stopHttpServer():
+```
+NotificationServlet.counter = 0;
+NotificationServlet.failureCounter = 0;
+```
+So your tearDown method should look like this:
+
+```java
+@After
+public void tearDown() throws Exception {
+  stopHttpServer();
+  NotificationServlet.counter = 0;
+  NotificationServlet.failureCounter = 0;
+  super.tearDown();
+}
+```
+This will reset the counters before each test execution, preventing any side effects from previous tests.

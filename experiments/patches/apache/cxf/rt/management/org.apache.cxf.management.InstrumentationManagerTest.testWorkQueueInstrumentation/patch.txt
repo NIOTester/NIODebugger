@@ -1,0 +1,65 @@
+```java
+package org.apache.cxf.management;
+
+import javax.management.MBeanServer;
+import javax.management.ObjectName;
+import org.apache.cxf.bus.spring.SpringBusFactory;
+import org.apache.cxf.workqueue.WorkQueueManagerImpl;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
+import java.util.Iterator;
+import java.util.Set;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+
+public class InstrumentationManagerTest {
+    Bus bus;
+
+    @After
+    public void tearDown() throws Exception {
+        //test case had done the bus.shutdown
+        if (bus != null) {
+            bus.shutdown(true);
+        }
+    }
+
+    @Test
+    public void testWorkQueueInstrumentation() throws Exception {
+        SpringBusFactory factory = new SpringBusFactory();
+        bus = factory.createBus("managed-spring.xml", true);
+        InstrumentationManager im = bus.getExtension(InstrumentationManager.class);
+        assertNotNull("Instrumentation Manager should not be null", im);
+        WorkQueueManagerImpl wqm = new WorkQueueManagerImpl();
+        wqm.setBus(bus);
+        wqm.getAutomaticWorkQueue();
+        MBeanServer mbs = im.getMBeanServer();
+        assertNotNull("MBeanServer should be available.", mbs);
+        ObjectName name = new ObjectName(ManagementConstants.DEFAULT_DOMAIN_NAME
+                + ":type=WorkQueues,*");
+        Set<ObjectName> s = mbs.queryNames(name, null);
+        assertEquals(2, s.size());
+        Iterator<ObjectName> it = s.iterator();
+        while (it.hasNext()) {
+            ObjectName n = it.next();
+            Long result =
+                    (Long) mbs.invoke(n, "getWorkQueueMaxSize", new Object[0], new String[0]);
+            assertEquals(result, Long.valueOf(256));
+            Integer hwm =
+                    (Integer) mbs.invoke(n, "getHighWaterMark", new Object[0], new String[0]);
+            if (n.getCanonicalName().contains("test-wq")) {
+                assertEquals(10, hwm.intValue());
+            } else {
+                assertEquals(15, hwm.intValue());
+            }
+        }
+        // Unregister MBeans at the end of the test
+        Iterator<ObjectName> it2 = s.iterator();
+        while (it2.hasNext()) {
+            mbs.unregisterMBean(it2.next());
+        }
+    }
+}
+```

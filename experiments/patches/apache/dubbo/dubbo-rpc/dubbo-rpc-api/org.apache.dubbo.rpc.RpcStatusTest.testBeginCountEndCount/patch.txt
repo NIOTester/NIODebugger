@@ -1,0 +1,34 @@
+```java
+package org.apache.dubbo.rpc;
+
+class RpcStatusTest {
+    @Test
+    void testBeginCountEndCount() {
+        URL url = new ServiceConfigURL("dubbo", "127.0.0.1", 91031, DemoService.class.getName());
+        String methodName = "testBeginCountEndCount";
+        int max = 2;
+
+        // Remove the RpcStatus of url and method name if it exists.
+        RpcStatus.removeStatus(url);
+        RpcStatus.removeStatus(url, methodName);
+
+        boolean flag = RpcStatus.beginCount(url, methodName, max);
+        RpcStatus urlRpcStatus = RpcStatus.getStatus(url);
+        RpcStatus methodRpcStatus = RpcStatus.getStatus(url, methodName);
+        Assertions.assertTrue(flag);
+        Assertions.assertNotNull(urlRpcStatus);
+        Assertions.assertNotNull(methodRpcStatus);
+        Assertions.assertEquals(urlRpcStatus.getActive(), 1);
+        Assertions.assertEquals(methodRpcStatus.getActive(), 1);
+        RpcStatus.endCount(url, methodName, 1000, true);
+        Assertions.assertEquals(urlRpcStatus.getActive(), 0);
+        Assertions.assertEquals(methodRpcStatus.getActive(), 0);
+        flag = RpcStatus.beginCount(url, methodName, max);
+        Assertions.assertTrue(flag);
+        flag = RpcStatus.beginCount(url, methodName, max);
+        Assertions.assertTrue(flag);
+        flag = RpcStatus.beginCount(url, methodName, max);
+        Assertions.assertFalse(flag);
+    }
+}
+```

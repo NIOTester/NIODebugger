@@ -1,0 +1,75 @@
+```
+package com.sismics.docs.rest;
+
+public class TestUserResource extends BaseJerseyTest {
+   
+    @Test
+    public void testResetPassword() throws Exception {
+        // Login admin
+        String adminToken = adminToken();
+        // Change SMTP configuration to target Wiser
+        target().path("/app/config_smtp").request()
+                .cookie(TokenBasedSecurityFilter.COOKIE_NAME, adminToken)
+                .post(Entity.form(new Form()
+                        .param("hostname", "localhost")
+                        .param("port", "2500")
+                        .param("from", "contact@sismicsdocs.com")
+                        ), JsonObject.class);
+        // Create absent_minded who lost his password
+        clientUtil.createUser("absent_minded");
+        // User no_such_user try to recovery its password: silently do nothing to avoid leaking users
+        JsonObject json = target().path("/user/password_lost").request()
+                .post(Entity.form(new Form()
+                        .param("username", "no_such_user")), JsonObject.class);
+        Assert.assertEquals("ok", json.getString("status"));
+        // User absent_minded try to recovery its password: OK
+        json = target().path("/user/password_lost").request()
+                .post(Entity.form(new Form()
+                        .param("username", "absent_minded")), JsonObject.class);
+        Assert.assertEquals("ok", json.getString("status"));
+        String emailBody = popEmail();
+        Assert.assertNotNull("No email to consume", emailBody);
+        Assert.assertTrue(emailBody.contains("Please reset your password"));
+        Pattern keyPattern = Pattern.compile("/passwordreset/(.+?)\"");
+        Matcher keyMatcher = keyPattern.matcher(emailBody);
+        Assert.assertTrue("Token not found", keyMatcher.find());
+        String key = keyMatcher.group(1).replaceAll("=", "");
+        // User absent_minded resets its password: invalid key
+        Response response = target().path("/user/password_reset").request()
+                .post(Entity.form(new Form()
+                        .param("key", "no_such_key")
+                        .param("password", "87654321")));
+        Assert.assertEquals(Response.Status.BAD_REQUEST, Response.Status.fromStatusCode(response.getStatus()));
+        json = response.readEntity(JsonObject.class);
+        Assert.assertEquals("KeyNotFound", json.getString("type"));
+        // User absent_minded resets its password: password invalid
+        response = target().path("/user/password_reset").request()
+                .post(Entity.form(new Form()
+                        .param("key", key)
+                        .param("password", " 1 ")));
+        Assert.assertEquals(Response.Status.BAD_REQUEST, Response.Status.fromStatusCode(response.getStatus()));
+        json = response.readEntity(JsonObject.class);
+        Assert.assertEquals("ValidationError", json.getString("type"));
+        Assert.assertTrue(json.getString("message"), json.getString("message").contains("password"));
+        // User absent_minded resets its password: OK
+        json = target().path("/user/password_reset").request()
+                .post(Entity.form(new Form()
+                        .param("key", key)
+                        .param("password", "87654321")), JsonObject.class);
+        Assert.assertEquals("ok", json.getString("status"));
+        // User absent_minded resets its password: expired key
+        response = target().path("/user/password_reset").request()
+                .post(Entity.form(new Form()
+                        .param("key", key)
+                        .param("password", "87654321")));
+        Assert.assertEquals(Response.Status.BAD_REQUEST, Response.Status.fromStatusCode(response.getStatus()));
+        json = response.readEntity(JsonObject.class);
+        Assert.assertEquals("KeyNotFound", json.getString("type"));
+        
+        // Delete absent_minded
+        target().path("/user/absent_minded").path("absent_minded").request()
+                .cookie(TokenBasedSecurityFilter.COOKIE_NAME, adminToken)
+                .delete();
+    }
+}
+```

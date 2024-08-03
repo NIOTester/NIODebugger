@@ -1,0 +1,12 @@
+```java
+@After
+public void tearDown() throws Exception {
+  // Add the cleanup method
+  if (client != null) {
+    client.cleanup();
+  }
+  
+  table.close();
+  testingUtil.deleteTable(TableName.valueOf(tableName));
+}
+```

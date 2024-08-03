@@ -1,0 +1,48 @@
+```java
+package org.apache.wicket.resource;
+
+class FileSystemResourceReferenceTest extends WicketTestCase
+{
+	@Test
+	void testFileSystemResourceReferenceWithZip() throws IOException, URISyntaxException
+	{
+		InputStream inputStream = null;
+		try
+		{
+			URL resource = FileSystemResourceReferenceTest.class.getResource("FileSystemResourceReferenceTest.zip");
+			URI uri = URI.create("jar:" + resource.toURI() + "!/folderInZip/FileSystemResourceReference.txt");
+			
+			FileSystem fs = null;
+			try {
+				fs = FileSystems.newFileSystem(uri, Collections.emptyMap());
+			} catch (FileSystemAlreadyExistsException e) {
+				fs = FileSystems.getFileSystem(uri);
+			}
+			Path path = fs.getPath("/folderInZip/FileSystemResourceReference.txt");
+
+			final FileSystemResource fileSystemResource = new FileSystemResource(path);
+			FileSystemResourceReference fileSystemResourceReference = new FileSystemResourceReference(
+				"test", path)
+			{
+				private static final long serialVersionUID = 1L;
+				@Override
+				protected FileSystemResource getFileSystemResource()
+				{
+					return fileSystemResource;
+				}
+			};
+			// Size
+			assertEquals(fileSystemResource.getSize(), 39);
+			// Content
+			inputStream = fileSystemResource.getInputStream();
+			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+			IOUtils.copy(inputStream, outputStream);
+			assertEquals("FileSystemResourceReference.zip content", outputStream.toString());
+		}
+		finally
+		{
+			IOUtils.closeQuietly(inputStream);
+		}
+	}
+}
+```

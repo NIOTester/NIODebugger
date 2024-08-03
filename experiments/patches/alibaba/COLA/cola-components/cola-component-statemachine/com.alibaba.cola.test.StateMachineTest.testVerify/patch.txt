@@ -1,0 +1,83 @@
+```java
+package com.alibaba.cola.test;
+
+import org.junit.jupiter.api.Test;
+
+public class StateMachineTest {
+    static final String MACHINE_ID = "TestStateMachine";
+    enum States {
+        STATE1,
+        STATE2,
+        STATE3,
+        STATE4
+    }
+    enum Events {
+        EVENT1,
+        EVENT2,
+        EVENT3,
+        EVENT4,
+        INTERNAL_EVENT
+    }
+    static class Context {
+        String operator = "frank";
+        String entityId = "123465";
+    }
+    @Test
+    public void testVerify() {
+        StateMachine<States, Events, Context> stateMachine = buildStateMachine(MACHINE_ID + "-testVerify" + System.currentTimeMillis());
+        Assert.assertTrue(stateMachine.verify(States.STATE1, Events.EVENT1));
+        Assert.assertFalse(stateMachine.verify(States.STATE1, Events.EVENT2));
+    }
+    private StateMachine<States, Events, Context> buildStateMachine(String machineId) {
+        StateMachineBuilder<States, Events, Context> builder = StateMachineBuilderFactory.create();
+        builder.externalTransition()
+            .from(States.STATE1)
+            .to(States.STATE2)
+            .on(Events.EVENT1)
+            .when(checkCondition())
+            .perform(doAction());
+        builder.internalTransition()
+            .within(States.STATE2)
+            .on(Events.INTERNAL_EVENT)
+            .when(checkCondition())
+            .perform(doAction());
+        builder.externalTransition()
+            .from(States.STATE2)
+            .to(States.STATE1)
+            .on(Events.EVENT2)
+            .when(checkCondition())
+            .perform(doAction());
+        builder.externalTransition()
+            .from(States.STATE1)
+            .to(States.STATE3)
+            .on(Events.EVENT3)
+            .when(checkCondition())
+            .perform(doAction());
+        builder.externalTransitions()
+            .fromAmong(States.STATE1, States.STATE2, States.STATE3)
+            .to(States.STATE4)
+            .on(Events.EVENT4)
+            .when(checkCondition())
+            .perform(doAction());
+        builder.build(machineId);
+        StateMachine<States, Events, Context> stateMachine = StateMachineFactory.get(machineId);
+        stateMachine.showStateMachine();
+        return stateMachine;
+    }
+    private Condition<Context> checkCondition() {
+        return new Condition<Context>() {
+            @Override
+            public boolean isSatisfied(Context context) {
+                System.out.println("Check condition : " + context);
+                return true;
+            }
+        };
+    }
+    private Action<States, Events, Context> doAction() {
+        return (from, to, event, ctx) -> {
+            System.out.println(
+                ctx.operator + " is operating " + ctx.entityId + " from:" + from + " to:" + to + " on:" + event);
+        };
+    }
+}
+```

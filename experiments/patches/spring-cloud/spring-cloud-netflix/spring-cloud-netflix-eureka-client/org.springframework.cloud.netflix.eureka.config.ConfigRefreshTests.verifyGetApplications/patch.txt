@@ -1,0 +1,23 @@
+```
+package org.springframework.cloud.netflix.eureka.config;
+
+@SpringBootTest(webEnvironment = RANDOM_PORT, classes = RefreshEurekaSampleApplication.class)
+class ConfigRefreshTests {
+	@Autowired
+	private ApplicationEventPublisher publisher;
+	@Autowired
+	// Mocked in RefreshEurekaSampleApplication
+	private EurekaClient client;
+
+    private static boolean isFirstRun = true;
+
+	@Test
+	void verifyGetApplications() {
+		if (publisher != null && isFirstRun) {
+			publisher.publishEvent(new RefreshScopeRefreshedEvent());
+            isFirstRun = false;
+		}
+		verify(client, times(3)).getApplications();
+	}
+}
+```

@@ -1,0 +1,47 @@
+In order to fix this issue, we need to reset the `RpcStatus` at the beginning of each test. We can do this by calling `RpcStatus.removeStatus(URL)` and `RpcStatus.removeStatus(URL, methodName)` at the beginning of the test. Here's the fixed code:
+
+```java
+package org.apache.dubbo.rpc;
+
+class RpcStatusTest {
+    @Test
+    void testStatistics() {
+        URL url = new ServiceConfigURL("dubbo", "127.0.0.1", 91033, DemoService.class.getName());
+        String methodName = "testStatistics";
+        int max = 0;
+        
+        // Reset the RpcStatus
+        RpcStatus.removeStatus(url);
+        RpcStatus.removeStatus(url, methodName);
+        
+        RpcStatus.beginCount(url, methodName, max);
+        RpcStatus.beginCount(url, methodName, max);
+        RpcStatus.beginCount(url, methodName, max);
+        RpcStatus.beginCount(url, methodName, max);
+        RpcStatus.endCount(url, methodName, 1000, true);
+        RpcStatus.endCount(url, methodName, 2000, true);
+        RpcStatus.endCount(url, methodName, 3000, false);
+        RpcStatus.endCount(url, methodName, 4000, false);
+        RpcStatus urlRpcStatus = RpcStatus.getStatus(url);
+        RpcStatus methodRpcStatus = RpcStatus.getStatus(url, methodName);
+        for (RpcStatus rpcStatus : Arrays.asList(urlRpcStatus, methodRpcStatus)) {
+            Assertions.assertEquals(rpcStatus.getActive(), 0);
+            Assertions.assertEquals(rpcStatus.getTotal(), 4);
+            Assertions.assertEquals(rpcStatus.getTotalElapsed(), 10000);
+            Assertions.assertEquals(rpcStatus.getMaxElapsed(), 4000);
+            Assertions.assertEquals(rpcStatus.getAverageElapsed(), 2500);
+            Assertions.assertEquals(rpcStatus.getAverageTps(), 0);
+            Assertions.assertEquals(rpcStatus.getSucceeded(), 2);
+            Assertions.assertEquals(rpcStatus.getSucceededElapsed(), 3000);
+            Assertions.assertEquals(rpcStatus.getSucceededMaxElapsed(), 2000);
+            Assertions.assertEquals(rpcStatus.getSucceededAverageElapsed(), 1500);
+            Assertions.assertEquals(rpcStatus.getFailed(), 2);
+            Assertions.assertEquals(rpcStatus.getFailedElapsed(), 7000);
+            Assertions.assertEquals(rpcStatus.getFailedMaxElapsed(), 4000);
+            Assertions.assertEquals(rpcStatus.getFailedAverageElapsed(), 3500);
+        }
+    }
+}
+```
+
+This will ensure that the state of `RpcStatus` is reset before each test run, preventing the side effects from influencing the outcome of the test.

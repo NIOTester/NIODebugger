@@ -1,0 +1,11 @@
+You need to reset `NotificationServlet.counter` and `NotificationServlet.failureCounter` in the `tearDown()` method to ensure that the counter values do not interfere with subsequent test runs. Here's the modified `tearDown()` method:
+
+```java
+@After
+public void tearDown() throws Exception {
+  stopHttpServer();
+  NotificationServlet.counter = 0;
+  NotificationServlet.failureCounter = 0;
+  super.tearDown();
+}
+```

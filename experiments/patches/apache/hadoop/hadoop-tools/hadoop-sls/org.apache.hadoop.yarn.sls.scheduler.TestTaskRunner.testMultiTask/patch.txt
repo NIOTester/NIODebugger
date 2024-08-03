@@ -1,0 +1,91 @@
+```java
+package org.apache.hadoop.yarn.sls.scheduler;
+
+public class TestTaskRunner {
+  private TaskRunner runner;
+
+  @Before
+  public void setUp() {
+    runner = new TaskRunner();
+    runner.setQueueSize(5);
+    SingleTask.first = false;
+    DualTask.first = false;
+    TriTask.first = false;
+    MultiTask.first = false;
+    PreStartTask.first = false;
+    SingleTask.latch = new CountDownLatch(1);
+    DualTask.latch = new CountDownLatch(1);
+    TriTask.latch = new CountDownLatch(1);
+    MultiTask.latch = new CountDownLatch(1);
+    PreStartTask.latch = new CountDownLatch(1);
+  }
+
+  @After
+  public void cleanUp() throws InterruptedException {
+    runner.stop();
+  }
+
+  public static class SingleTask extends TaskRunner.Task {
+    public static CountDownLatch latch;
+    public static boolean first;
+
+    public SingleTask(long startTime) {
+      super.init(startTime);
+    }
+
+    @Override
+    public void firstStep() {
+      if (first) {
+        Assert.fail();
+      }
+      first = true;
+      latch.countDown();
+    }
+
+    // Rest of the class as is...
+  }
+
+  public static class DualTask extends TaskRunner.Task {
+    public static CountDownLatch latch;
+    public static boolean first;
+    public static boolean last;
+
+    // Rest of the class as is...
+  }
+
+  public static class TriTask extends TaskRunner.Task {
+    public static CountDownLatch latch;
+    public static boolean first;
+    public static boolean middle;
+    public static boolean last;
+
+    // Rest of the class as is...
+  }
+
+  public static class MultiTask extends TaskRunner.Task {
+    public static CountDownLatch latch;
+    public static boolean first;
+    public static int middle;
+    public static boolean last;
+
+    // Rest of the class as is...
+  }
+
+  @Test
+  public void testMultiTask() throws Exception {
+    runner.start();
+    runner.schedule(new MultiTask(0, 20, 5));
+    MultiTask.latch.await(5000, TimeUnit.MILLISECONDS);
+    Assert.assertTrue(MultiTask.first);
+    Assert.assertEquals((20 - 0) / 5 - 2 + 1, MultiTask.middle);
+    Assert.assertTrue(MultiTask.last);
+  }
+
+  public static class PreStartTask extends TaskRunner.Task {
+    public static CountDownLatch latch;
+    public static boolean first;
+
+    // Rest of the class as is...
+  }
+}
+```

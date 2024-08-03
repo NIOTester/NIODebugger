@@ -1,0 +1,88 @@
+```java
+package org.apache.dubbo.config.integration.single.injvm;
+
+class SingleRegistryCenterInjvmIntegrationTest implements IntegrationTest {
+    private static final Logger logger = LoggerFactory.getLogger(SingleRegistryCenterInjvmIntegrationTest.class);
+
+    private String providerApplicationName = "single-registry-center-provider-for-injvm-protocol";
+    private static String SPI_NAME = "singleConfigCenterInjvm";
+
+    private ServiceConfig<SingleRegistryCenterInjvmService> serviceConfig;
+    private SingleRegistryCenterInjvmServiceListener serviceListener;
+    private SingleRegistryCenterInjvmExporterListener exporterListener;
+    private SingleRegistryCenterInjvmFilter filter;
+
+    @BeforeEach
+    public void setUp() throws Exception {
+        logger.info(getClass().getSimpleName() + " testcase is beginning...");
+        DubboBootstrap.reset();
+
+        serviceConfig = new ServiceConfig<>();
+        serviceConfig.setInterface(SingleRegistryCenterInjvmService.class);
+        serviceConfig.setRef(new SingleRegistryCenterInjvmServiceImpl());
+        serviceConfig.setAsync(false);
+        serviceConfig.setScope(SCOPE_LOCAL);
+
+        DubboBootstrap.getInstance()
+                .application(new ApplicationConfig(providerApplicationName))
+                .protocol(new ProtocolConfig("injvm"))
+                .service(serviceConfig);
+
+        RegistryConfig registryConfig = new RegistryConfig(ZookeeperRegistryCenterConfig.getConnectionAddress());
+        DubboBootstrap.getInstance().registry(registryConfig);
+    }
+
+    private void beforeExport() {
+        serviceListener = (SingleRegistryCenterInjvmServiceListener)
+                ExtensionLoader.getExtensionLoader(ServiceListener.class).getExtension(SPI_NAME);
+        exporterListener = (SingleRegistryCenterInjvmExporterListener)
+                ExtensionLoader.getExtensionLoader(ExporterListener.class).getExtension(SPI_NAME);
+        filter = (SingleRegistryCenterInjvmFilter)
+                ExtensionLoader.getExtensionLoader(Filter.class).getExtension(SPI_NAME);
+
+        Assertions.assertTrue(serviceListener.getExportedServices().isEmpty());
+        Assertions.assertTrue(exporterListener.getExportedExporters().isEmpty());
+        Assertions.assertFalse(serviceConfig.isExported());
+    }
+
+    @Test
+    @Override
+    public void integrate() {
+        beforeExport();
+        DubboBootstrap.getInstance().start();
+        afterExport();
+
+        ReferenceConfig<SingleRegistryCenterInjvmService> referenceConfig = new ReferenceConfig<>();
+        referenceConfig.setInterface(SingleRegistryCenterInjvmService.class);
+        referenceConfig.setScope(SCOPE_LOCAL);
+        referenceConfig.get().hello("Dubbo");
+
+        afterInvoke();
+    }
+
+    private void afterExport() {
+        Assertions.assertEquals(serviceListener.getExportedServices().size(), 1);
+        Assertions.assertEquals(
+                serviceListener.getExportedServices().get(0).getInterfaceClass(),
+                SingleRegistryCenterInjvmService.class);
+        Assertions.assertTrue(serviceListener.getExportedServices().get(0).isExported());
+        Assertions.assertEquals(exporterListener.getExportedExporters().size(), 3);
+        Assertions.assertTrue(exporterListener.getFilters().contains(filter));
+    }
+
+    private void afterInvoke() {
+        Assertions.assertTrue(filter.hasCalled());
+        Assertions.assertFalse(filter.hasError());
+        Assertions.assertEquals("Hello Dubbo", filter.getResponse());
+    }
+
+    @AfterEach
+    public void tearDown() throws IOException {
+        DubboBootstrap.reset();
+        serviceConfig = null;
+        Assertions.assertTrue(serviceListener.getExportedServices().isEmpty());
+        serviceListener = null;
+        logger.info(getClass().getSimpleName() + " testcase is ending...");
+    }
+}
+```

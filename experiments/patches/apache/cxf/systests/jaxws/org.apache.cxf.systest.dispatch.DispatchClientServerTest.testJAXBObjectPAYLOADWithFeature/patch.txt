@@ -1,0 +1,47 @@
+You can fix this test by saving the initial counts of the `TestDispatchFeature` before creating the bus, and then comparing the increments in the assertion checks.
+
+Here is the updated `testJAXBObjectPAYLOADWithFeature()` method:
+
+```java
+@Test
+public void testJAXBObjectPAYLOADWithFeature() throws Exception {
+    // Save initial counts
+    int initialCount = TestDispatchFeature.getCount();
+    int initialInInterceptorCount = TestDispatchFeature.getInInterceptorCount();
+    int initialOutInterceptorCount = TestDispatchFeature.getOutInterceptorCount();
+
+    createBus("org/apache/cxf/systest/dispatch/client-config.xml");
+    BusFactory.setThreadDefaultBus(bus);
+    URL wsdl = getClass().getResource("/wsdl/hello_world.wsdl");
+    assertNotNull(wsdl);
+    String bindingId = "http://schemas.xmlsoap.org/wsdl/soap/";
+    String endpointUrl = "http://localhost:" + greeterPort + "/SOAPDispatchService/SoapDispatchPort";
+    Service service = Service.create(wsdl, SERVICE_NAME);
+    service.addPort(PORT_NAME, bindingId, endpointUrl);
+    assertNotNull(service);
+    JAXBContext jc = JAXBContext.newInstance("org.apache.hello_world_soap_http.types");
+    Dispatch<Object> disp = service.createDispatch(PORT_NAME, jc, Service.Mode.PAYLOAD);
+    disp.getRequestContext().put(BindingProvider.ENDPOINT_ADDRESS_PROPERTY,
+                                 "http://localhost:"
+                                 + greeterPort
+                                 + "/SOAPDispatchService/SoapDispatchPort");
+    String expected = "Hello Jeeves";
+    GreetMe greetMe = new GreetMe();
+    greetMe.setRequestType("Jeeves");
+    Object response = disp.invoke(greetMe);
+    assertNotNull(response);
+    String responseValue = ((GreetMeResponse)response).getResponseType();
+    assertEquals("Expected string, " + expected, expected, responseValue);
+
+    // Check the increments instead of the absolute values
+    assertEquals("Feature should be applied", initialCount + 1, TestDispatchFeature.getCount());
+    assertEquals("Feature based interceptors should be added",
+                 initialCount + 1, TestDispatchFeature.getCount());
+    assertEquals("Feature based In interceptors has be added to in chain.",
+                 initialInInterceptorCount + 1, TestDispatchFeature.getInInterceptorCount());
+    assertEquals("Feature based interceptors has to be added to out chain.",
+                 initialOutInterceptorCount + 1, TestDispatchFeature.getOutInterceptorCount());
+
+    bus.shutdown(true);
+}
+```

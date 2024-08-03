@@ -1,0 +1,33 @@
+```java
+package org.apache.hadoop.mapred;
+
+import org.apache.hadoop.fs.FileUtil;
+
+public class TestOldCombinerGrouping {
+  private static String TEST_ROOT_DIR = new File(System.getProperty(
+      "test.build.data", "build/test/data"), UUID.randomUUID().toString())
+          .getAbsolutePath();
+
+  // Your other classes and methods...
+
+  @Test
+  public void testCombiner() throws Exception {
+    // Clean up test directory if it already exists
+    File testDir = new File(TEST_ROOT_DIR);
+    if (testDir.exists()) {
+      FileUtil.fullyDelete(testDir);
+    }
+
+    if (!testDir.mkdirs()) {
+      throw new RuntimeException("Could not create test dir: " + TEST_ROOT_DIR);
+    }
+    File in = new File(TEST_ROOT_DIR, "input");
+    if (!in.mkdirs()) {
+      throw new RuntimeException("Could not create test dir: " + in);
+    }
+    File out = new File(TEST_ROOT_DIR, "output");
+
+    // The rest of your test code...
+  }
+}
+```

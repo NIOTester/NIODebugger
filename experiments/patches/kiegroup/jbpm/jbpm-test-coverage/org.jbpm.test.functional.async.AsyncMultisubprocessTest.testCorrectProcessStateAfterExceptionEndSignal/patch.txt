@@ -1,0 +1,63 @@
+```java
+package org.jbpm.test.functional.async;
+
+public class AsyncMultisubprocessTest extends JbpmTestCase {
+
+    private static final String BPMN_AICS = "org/jbpm/test/functional/async/AsyncSubMultiprocess.bpmn2";
+    private static final String PROCESS_AICS = "TestSubMult";
+    private ExecutorService executorService;
+    PoolingDataSourceWrapper ds;
+    private CountDownLatch latch; // Moved from static field to non-static
+
+    @Before
+    @Override
+    public void setUp() throws Exception {
+        setupDataSource = true;
+        super.setUp();
+        latch = new CountDownLatch(1); // Initialized here
+        executorService = ExecutorServiceFactory.newExecutorService(getEmf());
+        executorService.setInterval(1);
+        executorService.init();
+        addEnvironmentEntry("ExecutorService", executorService);
+        addEnvironmentEntry("AsyncMode", new String("true"));
+        addProcessEventListener(new DefaultProcessEventListener() {
+            @Override
+            public void afterProcessCompleted(ProcessCompletedEvent event) {
+                latch.countDown();
+            }
+        });
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        super.tearDown();
+        executorService.destroy();
+    }
+
+    @Test()
+    public void testCorrectProcessStateAfterExceptionEndSignal() throws Exception {
+        final String USER_ID = "rhpamAdmin";
+        KieSession ksession = createKSession(BPMN_AICS);
+        Map<String, Object> properties = new HashMap<>();
+        properties.put("number_reviews", 4);
+        properties.put("approvalsRequired", 4);
+        properties.put("employee", "egonzale");
+        ProcessInstance processInstance = ksession.startProcess(PROCESS_AICS, properties);
+        long pid1 = processInstance.getId();
+        TaskService taskService = getRuntimeEngine().getTaskService();
+        List<Long> taskIds = taskService.getTasksByProcessInstanceId(pid1);
+        while (taskIds.size() < 4) {
+            taskIds = taskService.getTasksByProcessInstanceId(pid1);
+            Thread.sleep(100);
+        }
+        for (Long taskId : taskIds) {
+            taskService.claim(taskId, USER_ID);
+            taskService.start(taskId, USER_ID);
+            taskService.complete(taskId, USER_ID, Collections.singletonMap("results", Boolean.TRUE));
+        }
+        latch.await();
+        processInstance = ksession.getProcessInstance(pid1);
+        Assertions.assertThat(processInstance).isNull();
+    }
+}
+```

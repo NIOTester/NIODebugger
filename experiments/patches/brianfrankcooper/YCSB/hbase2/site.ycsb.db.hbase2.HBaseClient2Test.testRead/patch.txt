@@ -1,0 +1,81 @@
+```java
+package site.ycsb.db.hbase2;
+/**
+ * Integration tests for the YCSB HBase 2 client using an HBase minicluster.
+ */
+public class HBaseClient2Test {
+  private final static String COLUMN_FAMILY = "cf";
+  private static HBaseTestingUtility testingUtil;
+  private HBaseClient2 client;
+  private Table table = null;
+  private String tableName;
+  private static boolean isWindows() {
+    final String os = System.getProperty("os.name");
+    return os.startsWith("Windows");
+  }
+  /**
+   * Creates a mini-cluster for use in these tests.
+   * This is a heavy-weight operation, so invoked only once for the test class.
+   */
+  @BeforeClass
+  public static void setUpClass() throws Exception {
+    // Minicluster setup fails on Windows with an UnsatisfiedLinkError.
+    // Skip if windows.
+    assumeTrue(!isWindows());
+    testingUtil = HBaseTestingUtility.createLocalHTU();
+    testingUtil.startMiniCluster();
+  }
+  /**
+   * Tears down mini-cluster.
+   */
+  @AfterClass
+  public static void tearDownClass() throws Exception {
+    if (testingUtil != null) {
+      testingUtil.shutdownMiniCluster();
+    }
+  }
+  /**
+   * Re-create the table for each test. Using default properties.
+   */
+  public void setUp() throws Exception {
+    setUp(new Properties());
+  }
+  /**
+   * Re-create the table for each test. Using custom properties.
+   */
+  public void setUp(Properties p) throws Exception {
+    client = new HBaseClient2();
+    client.setConfiguration(new Configuration(testingUtil.getConfiguration()));
+    p.setProperty("columnfamily", COLUMN_FAMILY);
+    Measurements.setProperties(p);
+    final CoreWorkload workload = new CoreWorkload();
+    workload.init(p);
+    tableName = p.getProperty(TABLENAME_PROPERTY, TABLENAME_PROPERTY_DEFAULT);
+    table = testingUtil.createTable(TableName.valueOf(tableName), Bytes.toBytes(COLUMN_FAMILY));
+    client.setProperties(p);
+    client.init();
+  }
+  @After
+  public void tearDown() throws Exception {
+    client.cleanup();
+    table.close();
+    testingUtil.deleteTable(TableName.valueOf(tableName));
+  }
+  @Test
+  public void testRead() throws Exception {
+    setUp();
+    final String rowKey = "row1";
+    final Put p = new Put(Bytes.toBytes(rowKey));
+    p.addColumn(Bytes.toBytes(COLUMN_FAMILY),
+        Bytes.toBytes("column1"), Bytes.toBytes("value1"));
+    p.addColumn(Bytes.toBytes(COLUMN_FAMILY),
+        Bytes.toBytes("column2"), Bytes.toBytes("value2"));
+    table.put(p);
+    final HashMap<String, ByteIterator> result = new HashMap<String, ByteIterator>();
+    final Status status = client.read(tableName, rowKey, null, result);
+    assertEquals(Status.OK, status);
+    assertEquals(2, result.size());
+    assertEquals("value1", result.get("column1").toString());
+    assertEquals("value2", result.get("column2").toString());
+  }
+```

@@ -1,0 +1,49 @@
+The issue is that the state machine with the id "ParallelMachine" is already built because of the static nature of the test. We can't have two tests with the same machine id in the same JVM. To solve this, you can generate a unique id for each machine every time the test is run. Here is the fixed Java code:
+
+```java
+package com.alibaba.cola.test;
+
+public class StateMachineTest {
+    static String MACHINE_ID = "TestStateMachine";
+    static enum States {
+        STATE1,
+        STATE2,
+        STATE3,
+        STATE4
+    }
+    static enum Events {
+        EVENT1,
+        EVENT2,
+        EVENT3,
+        EVENT4,
+        INTERNAL_EVENT
+    }
+    static class Context {
+        String operator = "frank";
+        String entityId = "123465";
+    }
+
+    private StateMachine<States, Events, Context> buildStateMachine(String machineId) {
+        // ...
+    }
+    
+    @Test
+    public void testParallel(){
+        String uniqueID = UUID.randomUUID().toString();
+        StateMachineBuilder<States, Events, Context> builder = StateMachineBuilderFactory.create();
+        // ...
+        StateMachine<States, Events, Context> stateMachine = builder.build(uniqueID);
+        // ...
+    }
+
+    private Condition<Context> checkCondition() {
+        // ...
+    }
+
+    private Action<States, Events, Context> doAction() {
+        // ...
+    }
+}
+```
+
+In the above code, `UUID.randomUUID().toString()` is used to generate a unique id for each machine every time the test is run.

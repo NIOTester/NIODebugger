@@ -1,0 +1,36 @@
+```
+package org.jbpm.kie.services.test;
+
+public class FilteredKModuleDeploymentServiceTest extends AbstractKieServicesBaseTest {
+    private static final Logger logger = LoggerFactory.getLogger(FilteredKModuleDeploymentServiceTest.class);
+    private List<DeploymentUnit> units = new ArrayList<DeploymentUnit>();
+
+    public void prepare(String packages) {
+        // Your code
+    }
+
+    public void cleanup() {
+        // Your code
+    }
+
+    protected InternalKieModule createKieJar(KieServices ks, ReleaseId releaseId, List<String> resources, List<String> resources2, String packages ) {
+        // Your code
+    }
+
+    protected KieFileSystem createKieFileSystemWithKProject(KieServices ks, String packages) {
+        // Your code
+    }
+
+    private void verifyDeployedUnitContainsCorrectClasses(DeploymentUnit deploymentUnit) {
+        // Your code
+    }
+
+    @Test
+    public void testSerializationClassesLimitedInDeploymentDependencies() {
+       // Your code 
+       // Add these lines
+       units.add(childDeploymentUnit);
+       units.add(parentDeploymentUnit);
+    }
+}
+```

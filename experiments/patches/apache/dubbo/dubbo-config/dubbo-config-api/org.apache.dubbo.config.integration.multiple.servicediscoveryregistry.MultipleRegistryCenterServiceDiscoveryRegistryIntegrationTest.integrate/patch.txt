@@ -1,0 +1,15 @@
+```java
+package org.apache.dubbo.config.integration.multiple.servicediscoveryregistry;
+
+class MultipleRegistryCenterServiceDiscoveryRegistryIntegrationTest implements IntegrationTest {
+    // ... existing code ...
+
+    @AfterEach
+    public void tearDown() throws IOException {
+        DubboBootstrap.reset();
+        serviceConfig = null;
+        // ... existing code ...
+    }
+}
+```
+In the above modification, I removed the line `PROVIDER_APPLICATION_NAME = null;` from the `tearDown()` method because it was causing the `PROVIDER_APPLICATION_NAME` to be null for all the subsequent tests in the same JVM. Since the `PROVIDER_APPLICATION_NAME` is required for creating an `ApplicationConfig`, it should not be set to null.
