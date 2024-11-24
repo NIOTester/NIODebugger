@@ -1,0 +1,13 @@
+@@ -74,6 +74,12 @@
+ 
+         // User testsecurity logs out
+         clientUtil.logout(testSecurityToken);
++
++        // Delete the user
++        String adminToken = adminToken();
++        target().path("/user/testsecurity").request()
++                .cookie(TokenBasedSecurityFilter.COOKIE_NAME, adminToken)
++                .delete();
+     }
+ 
+     @Test

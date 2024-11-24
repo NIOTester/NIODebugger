@@ -1,0 +1,18 @@
+@@ -208,7 +208,7 @@
+ 
+ 
+   public static class PreStartTask extends TaskRunner.Task {
+-    public static CountDownLatch latch = new CountDownLatch(1);
++    public static CountDownLatch latch;
+     public static boolean first;
+ 
+     public PreStartTask(long startTime) {
+@@ -235,6 +235,8 @@
+ 
+   @Test
+   public void testPreStartQueueing() throws Exception {
++    PreStartTask.first = false;
++    PreStartTask.latch = new CountDownLatch(1);
+     runner.schedule(new PreStartTask(210));
+     Thread.sleep(210);
+     runner.start();

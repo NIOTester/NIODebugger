@@ -1,0 +1,10 @@
+@@ -86,7 +86,8 @@
+             .when(checkCondition())
+             .perform(doAction());
+ 
+-        StateMachine<States, Events, Context> stateMachine = builder.build(MACHINE_ID + "-testVerify");
++        // Build a state machine with a random ID
++        StateMachine<States, Events, Context> stateMachine = builder.build(java.util.UUID.randomUUID().toString());
+ 
+         Assert.assertTrue(stateMachine.verify(States.STATE1, Events.EVENT1));
+         Assert.assertFalse(stateMachine.verify(States.STATE1, Events.EVENT2));

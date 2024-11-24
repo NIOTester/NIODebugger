@@ -1,0 +1,9 @@
+@@ -558,7 +558,7 @@
+         assertEquals(ProcessInstance.STATE_ACTIVE, processInstance2.getState());
+         
+         manager.disposeRuntimeEngine(runtime1);
+-        manager.disposeRuntimeEngine(runtime2);
++        manager2.disposeRuntimeEngine(runtime2); // runtime2 is associated to manager2
+         
+         // close manager which will close session maintained by the manager
+         manager.close();

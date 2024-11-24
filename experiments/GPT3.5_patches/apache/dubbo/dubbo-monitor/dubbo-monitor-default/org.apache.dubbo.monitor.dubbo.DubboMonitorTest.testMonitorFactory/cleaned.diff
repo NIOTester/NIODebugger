@@ -1,0 +1,21 @@
+@@ -160,15 +160,18 @@
+         MonitorFactory monitorFactory =
+                 ExtensionLoader.getExtensionLoader(MonitorFactory.class).getAdaptiveExtension();
+ 
++        // Generate a random port between 1 and 20000
++        int randomPort = (int) (Math.random() * (20000 - 1) + 1);
++
+         Exporter<MonitorService> exporter = protocol.export(proxyFactory.getInvoker(
+                 monitorService,
+                 MonitorService.class,
+-                URL.valueOf("dubbo://127.0.0.1:17979/" + MonitorService.class.getName())));
++                URL.valueOf("dubbo://127.0.0.1:" + randomPort + "/" + MonitorService.class.getName())));
+         try {
+             Monitor monitor = null;
+             long start = System.currentTimeMillis();
+             while (System.currentTimeMillis() - start < 60000) {
+-                monitor = monitorFactory.getMonitor(URL.valueOf("dubbo://127.0.0.1:17979?interval=10"));
++                monitor = monitorFactory.getMonitor(URL.valueOf("dubbo://127.0.0.1:" + randomPort + "?interval=10"));
+                 if (monitor == null) {
+                     continue;
+                 }

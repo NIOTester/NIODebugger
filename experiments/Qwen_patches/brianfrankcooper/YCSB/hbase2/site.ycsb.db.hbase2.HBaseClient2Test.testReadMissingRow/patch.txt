@@ -1,0 +1,13 @@
+To fix the issue, you can clean up the client so its states are not to be referenced by later runs:
+
+```java
+
+@After
+public void tearDown() throws Exception {
+
+  // your code to clean up the test
+
+  client.cleanup();
+}
+
+```

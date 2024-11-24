@@ -6,15 +6,12 @@ echo "project name,SHA,compile,NIO flaky tests,total tests,successful tests,fail
 echo "Project URL,SHA Detected,Subproject Name,Fully-Qualified Test Name (packageName.ClassName#methodName)" > NIO_flaky_tests.csv
 
 
-for repo in $(cat $1)
-    do
-	user=$(dirname $repo)
-	cur_repo=$(basename $repo)
-	dir=github.com/${user}/${cur_repo}
-	url=http://github.com/${user}/${cur_repo}.git
-        git clone $url ${dir}
-        echo $repo
-        ./runPluginOnProject.sh ${dir}
-
-    done
-
+for repo in $(cat $1); do
+    user=$(dirname $repo)
+    cur_repo=$(basename $repo)
+    dir=github.com/${user}/${cur_repo}
+    url=http://github.com/${user}/${cur_repo}.git
+    git clone $url ${dir}
+    echo $repo
+    ./runPluginOnProject.sh ${dir} $2 $3
+done

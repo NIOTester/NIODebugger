@@ -1,0 +1,17 @@
+@@ -53,11 +53,13 @@
+             .on(Events.EVENT1)
+             .when(checkCondition())
+             .perform(doAction());
+-
+-        StateMachine<States, Events, Context> stateMachine = builder.build(MACHINE_ID);
++    
++        // Fixed test case with machineId uniqueness to make the tests idempotent.
++        String machineId = "TestStateMachine" + "-" + UUID.randomUUID().toString();
++    
+         States target = stateMachine.fireEvent(States.STATE1, Events.EVENT1, new Context());
+         Assert.assertEquals(States.STATE2, target);
+-    }
++    } 
+ 
+     @Test
+     public void testFail() {

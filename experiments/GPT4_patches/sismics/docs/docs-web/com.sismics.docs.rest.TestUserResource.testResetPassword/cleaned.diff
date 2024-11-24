@@ -1,0 +1,13 @@
+@@ -484,6 +484,12 @@
+         Assert.assertEquals(Response.Status.BAD_REQUEST, Response.Status.fromStatusCode(response.getStatus()));
+         json = response.readEntity(JsonObject.class);
+         Assert.assertEquals("KeyNotFound", json.getString("type"));
++
++        // Delete absent_minded
++        response = target().path("/user/absent_minded").request()
++                .cookie(TokenBasedSecurityFilter.COOKIE_NAME, adminToken)
++                .delete();
++        Assert.assertEquals(Response.Status.OK, Response.Status.fromStatusCode(response.getStatus()));
+     }
+ }
+ 

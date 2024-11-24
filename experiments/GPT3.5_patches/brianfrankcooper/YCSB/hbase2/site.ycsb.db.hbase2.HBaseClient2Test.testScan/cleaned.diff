@@ -1,0 +1,9 @@
+@@ -188,6 +188,8 @@
+       final int rowNum = buf.getInt();
+       assertEquals(i + 1, rowNum);
+     }
++
++    client.cleanup(); // reset client to ensure cleaned states
+   }
+ 
+   @Test

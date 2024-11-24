@@ -1,0 +1,45 @@
+@@ -74,7 +74,6 @@
+     }
+ 
+     @Test
+-    // try to get WorkQueue information
+     public void testWorkQueueInstrumentation() throws Exception {
+         SpringBusFactory factory = new SpringBusFactory();
+         bus = factory.createBus("managed-spring.xml", true);
+@@ -83,30 +82,32 @@
+         WorkQueueManagerImpl wqm = new WorkQueueManagerImpl();
+         wqm.setBus(bus);
+         wqm.getAutomaticWorkQueue();
+-
+         MBeanServer mbs = im.getMBeanServer();
+         assertNotNull("MBeanServer should be available.", mbs);
+         ObjectName name = new ObjectName(ManagementConstants.DEFAULT_DOMAIN_NAME
+-                                         + ":type=WorkQueues,*");
++                + ":type=WorkQueues,*");
+         Set<ObjectName> s = mbs.queryNames(name, null);
+         assertEquals(2, s.size());
+         Iterator<ObjectName> it = s.iterator();
+         while (it.hasNext()) {
+             ObjectName n = it.next();
+             Long result =
+-                (Long)mbs.invoke(n, "getWorkQueueMaxSize", new Object[0], new String[0]);
++                    (Long) mbs.invoke(n, "getWorkQueueMaxSize", new Object[0], new String[0]);
+             assertEquals(result, Long.valueOf(256));
+             Integer hwm =
+-                (Integer)mbs.invoke(n, "getHighWaterMark", new Object[0], new String[0]);
++                    (Integer) mbs.invoke(n, "getHighWaterMark", new Object[0], new String[0]);
+             if (n.getCanonicalName().contains("test-wq")) {
+                 assertEquals(10, hwm.intValue());
+             } else {
+                 assertEquals(15, hwm.intValue());
+             }
+         }
+-
+-        bus.shutdown(true);
+-    }
++        // Unregister MBeans at the end of the test
++        Iterator<ObjectName> it2 = s.iterator();
++        while (it2.hasNext()) {
++            mbs.unregisterMBean(it2.next());
++        }
++    } 

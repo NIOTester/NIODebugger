@@ -1,0 +1,9 @@
+@@ -169,7 +169,7 @@
+                         .when(checkCondition())
+                         .perform(doAction()));
+ 
+-        StateMachine stateMachine = builder.build("AdjustPriceTask");
++        StateMachine stateMachine = builder.build("AdjustPriceTask_" + java.util.UUID.randomUUID().toString());
+         String plantUML = stateMachine.generatePlantUML();
+         System.out.println(plantUML);
+ 

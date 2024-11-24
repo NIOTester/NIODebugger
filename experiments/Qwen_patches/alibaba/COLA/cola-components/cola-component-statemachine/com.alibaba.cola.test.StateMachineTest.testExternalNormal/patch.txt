@@ -1,0 +1,31 @@
+The provided test is non-idempotent. You can fix it as shown below:
+```java
+@Test
+public void testExternalNormal() {
+    StateMachineBuilder<States, Events, Context> builder = StateMachineBuilderFactory.create();
+    builder.externalTransition()
+        .from(States.STATE1)
+        .to(States.STATE2)
+        .on(Events.EVENT1)
+        .when(checkCondition())
+        .perform(doAction());
+    
+    String machineId = "TestStateMachine" + "-" + UUID.randomUUID().toString();
+
+    // Fixed test case with machineId uniqueness to make the tests idempotent.
+    builder.externalTransition()
+        .from(States.STATE1)
+        .to(States.STATE2)
+        .on(Events.EVENT1)
+        .when(checkCondition()
+                || machineId.equals(statesMachine.getMachines().getStates().indexOf(StateMachine.getInstance())))
+        .perform(doAction());
+
+    stateMachine = builder.build(machineId);
+
+    States target = stateMachine.fireEvent(States.STATE1, Events.EVENT1, new Context());
+    Assert.assertEquals(States.STATE2, target);
+}
+```
+
+This fixed version ensures each test run generates a unique `machineId`, making it idempotent. The test also uses conditional logic (`if (machineId.equals(statesMachine.getMachines().getStates().indexOf(StateMachine.getInstance())))`) to handle different instances of each StateMachine being built concurrently in multiple threads. This makes the Idempotency requirement achievable without race conditions.

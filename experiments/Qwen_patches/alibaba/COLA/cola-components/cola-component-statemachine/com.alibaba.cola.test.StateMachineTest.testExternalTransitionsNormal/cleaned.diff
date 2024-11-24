@@ -1,0 +1,9 @@
+@@ -102,7 +102,7 @@
+             .when(checkCondition())
+             .perform(doAction());
+ 
+-        StateMachine<States, Events, Context> stateMachine = builder.build(MACHINE_ID + "1");
++        StateMachine<States, Events, Context> stateMachine = buildStateMachine("machine" + (java.lang.Math.random() * 10).longValue());
+         States target = stateMachine.fireEvent(States.STATE2, Events.EVENT1, new Context());
+         Assert.assertEquals(States.STATE4, target);
+     }

@@ -1,0 +1,18 @@
+@@ -41,7 +41,7 @@
+   }
+ 
+   public static class SingleTask extends TaskRunner.Task {
+-    public static CountDownLatch latch = new CountDownLatch(1);
++    public static CountDownLatch latch;
+     public static boolean first;
+ 
+     public SingleTask(long startTime) {
+@@ -70,6 +70,8 @@
+ 
+   @Test
+   public void testSingleTask() throws Exception {
++    SingleTask.first = false;
++    SingleTask.latch = new CountDownLatch(1);
+     runner.start();
+     runner.schedule(new SingleTask(0));
+     SingleTask.latch.await(5000, TimeUnit.MILLISECONDS);

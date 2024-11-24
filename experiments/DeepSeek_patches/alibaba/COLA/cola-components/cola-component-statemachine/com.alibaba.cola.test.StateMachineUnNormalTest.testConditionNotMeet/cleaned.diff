@@ -1,0 +1,19 @@
+@@ -9,6 +9,8 @@
+ import org.junit.Assert;
+ import org.junit.Test;
+ 
++import java.util.UUID;
++
+ import static com.alibaba.cola.test.StateMachineTest.MACHINE_ID;
+ 
+ /**
+@@ -29,7 +31,8 @@
+                 .when(checkConditionFalse())
+                 .perform(doAction());
+ 
+-        StateMachine<StateMachineTest.States, StateMachineTest.Events, StateMachineTest.Context> stateMachine = builder.build("NotMeetConditionMachine");
++        // Fix: assign a unique ID to each state machine to resolve non-idempotent behavior
++        StateMachine<StateMachineTest.States, StateMachineTest.Events, StateMachineTest.Context> stateMachine = builder.build(UUID.randomUUID().toString() + "NotMeetConditionMachine");
+         StateMachineTest.States target = stateMachine.fireEvent(StateMachineTest.States.STATE1, StateMachineTest.Events.EVENT1, new StateMachineTest.Context());
+         Assert.assertEquals(StateMachineTest.States.STATE1,target);
+     }

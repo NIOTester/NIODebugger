@@ -1,0 +1,20 @@
+```java
+@Before
+public void setUp() throws Exception {
+  // clean up possible polluted states 
+  client.cleanup();
+
+  Properties p = new Properties();
+  p.setProperty("columnfamily", COLUMN_FAMILY);
+  Measurements.setProperties(p);
+  final CoreWorkload workload = new CoreWorkload();
+  workload.init(p);
+  tableName = p.getProperty(TABLENAME_PROPERTY, TABLENAME_PROPERTY_DEFAULT);
+  table = testingUtil.createTable(TableName.valueOf(tableName), Bytes.toBytes(COLUMN_FAMILY));
+  final String zkQuorum = "127.0.0.1:" + testingUtil.getZkCluster().getClientPort();
+  p.setProperty("hbase.zookeeper.quorum", zkQuorum);
+  client = new AsyncHBaseClient();
+  client.setProperties(p);
+  client.init();
+}
+```

@@ -1,0 +1,8 @@
+@@ -49,5 +49,7 @@
+         result = live.execute(commandContext, new String[0]);
+         Assertions.assertEquals(result, "true");
+         Assertions.assertEquals(commandContext.getHttpCode(), 200);
++
++        MockLivenessProbe.setCheckReturnValue(false); // reset check return value to false
+     }
+ }

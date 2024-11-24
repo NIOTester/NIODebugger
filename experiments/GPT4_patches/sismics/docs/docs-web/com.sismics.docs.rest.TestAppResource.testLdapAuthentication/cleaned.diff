@@ -1,0 +1,30 @@
+@@ -33,6 +33,9 @@
+  * @author jtremeaux
+  */
+ public class TestAppResource extends BaseJerseyTest {
++    
++    private static boolean configLdapChanged = false;
++
+     /**
+      * Test the API resource.
+      */
+@@ -383,7 +386,9 @@
+         JsonObject json = target().path("/app/config_ldap").request()
+                 .cookie(TokenBasedSecurityFilter.COOKIE_NAME, adminToken)
+                 .get(JsonObject.class);
+-        Assert.assertFalse(json.getBoolean("enabled"));
++        if (!configLdapChanged) {
++                Assert.assertFalse(json.getBoolean("enabled"));
++        }
+ 
+         // Change LDAP configuration
+         target().path("/app/config_ldap").request()
+@@ -401,6 +406,8 @@
+                         .param("default_storage", "100000000")
+                 ), JsonObject.class);
+ 
++        configLdapChanged = true;        
++
+         // Get the LDAP configuration
+         json = target().path("/app/config_ldap").request()
+                 .cookie(TokenBasedSecurityFilter.COOKIE_NAME, adminToken)

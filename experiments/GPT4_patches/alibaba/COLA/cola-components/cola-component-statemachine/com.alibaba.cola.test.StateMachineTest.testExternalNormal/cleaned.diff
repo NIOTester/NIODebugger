@@ -1,0 +1,26 @@
+@@ -12,6 +12,8 @@
+ import org.junit.Assert;
+ import org.junit.Test;
+ 
++import java.util.UUID;
++
+ import java.util.List;
+ 
+ /**
+@@ -46,6 +48,7 @@
+ 
+     @Test
+     public void testExternalNormal() {
++        String machineId = UUID.randomUUID().toString();
+         StateMachineBuilder<States, Events, Context> builder = StateMachineBuilderFactory.create();
+         builder.externalTransition()
+             .from(States.STATE1)
+@@ -54,7 +57,7 @@
+             .when(checkCondition())
+             .perform(doAction());
+ 
+-        StateMachine<States, Events, Context> stateMachine = builder.build(MACHINE_ID);
++        StateMachine<States, Events, Context> stateMachine = builder.build(machineId);
+         States target = stateMachine.fireEvent(States.STATE1, Events.EVENT1, new Context());
+         Assert.assertEquals(States.STATE2, target);
+     }

@@ -1,0 +1,11 @@
+@@ -54,9 +54,7 @@
+     @Test
+     void test() throws Exception {
+         ClassGenerator cg = ClassGenerator.newInstance();
+-
+-        // add className, interface, superClass
+-        String className = BaseClass.class.getPackage().getName() + ".TestClass";
++        String className = BaseClass.class.getPackage().getName() + ".TestClass" + Long.toHexString(Double.doubleToLongBits(Math.random()));
+         cg.setClassName(className);
+         cg.addInterface(BaseInterface.class);
+         cg.setSuperClass(BaseClass.class);

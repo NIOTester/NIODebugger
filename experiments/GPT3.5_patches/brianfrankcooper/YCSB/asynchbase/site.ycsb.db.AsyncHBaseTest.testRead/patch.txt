@@ -1,0 +1,127 @@
+```java
+package site.ycsb.db;
+
+import static site.ycsb.workloads.CoreWorkload.TABLENAME_PROPERTY;
+import static site.ycsb.workloads.CoreWorkload.TABLENAME_PROPERTY_DEFAULT;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
+
+import site.ycsb.ByteIterator;
+import site.ycsb.Status;
+import site.ycsb.StringByteIterator;
+import site.ycsb.measurements.Measurements;
+import site.ycsb.workloads.CoreWorkload;
+
+import org.apache.hadoop.hbase.HBaseTestingUtility;
+import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.client.Get;
+import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.client.Result;
+import org.apache.hadoop.hbase.client.Table;
+import org.apache.hadoop.hbase.util.Bytes;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Ignore;
+import org.junit.Test;
+
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Properties;
+import java.util.Vector;
+
+public class AsyncHBaseTest {
+
+  private final static String COLUMN_FAMILY = "cf";
+
+  private static HBaseTestingUtility testingUtil;
+  private AsyncHBaseClient client;
+  private Table table = null;
+  private String tableName;
+
+  private static boolean isWindows() {
+    final String os = System.getProperty("os.name");
+    return os.startsWith("Windows");
+  }
+
+  /**
+   * Creates a mini-cluster for use in these tests.
+   *
+   * This is a heavy-weight operation, so invoked only once for the test class.
+   */
+  @BeforeClass
+  public static void setUpClass() throws Exception {
+    // Minicluster setup fails on Windows with an UnsatisfiedLinkError.
+    // Skip if windows.
+    assumeTrue(!isWindows());
+    testingUtil = HBaseTestingUtility.createLocalHTU();
+    testingUtil.startMiniCluster();
+  }
+
+  /**
+   * Tears down mini-cluster.
+   */
+  @AfterClass
+  public static void tearDownClass() throws Exception {
+    if (testingUtil != null) {
+      testingUtil.shutdownMiniCluster();
+    }
+  }
+
+  /**
+   * Sets up the mini-cluster for testing.
+   *
+   * We re-create the table for each test.
+   */
+  @Before
+  public void setUp() throws Exception {
+    Properties p = new Properties();
+    p.setProperty("columnfamily", COLUMN_FAMILY);
+
+    Measurements.setProperties(p);
+    final CoreWorkload workload = new CoreWorkload();
+    workload.init(p);
+
+    tableName = p.getProperty(TABLENAME_PROPERTY, TABLENAME_PROPERTY_DEFAULT);
+    table = testingUtil.createTable(TableName.valueOf(tableName), Bytes.toBytes(COLUMN_FAMILY));
+
+    final String zkQuorum = "127.0.0.1:" + testingUtil.getZkCluster().getClientPort();
+    p.setProperty("hbase.zookeeper.quorum", zkQuorum);
+    client = new AsyncHBaseClient();
+    client.setProperties(p);
+    client.init();
+  }
+
+  @After
+  public void tearDown() throws Exception {
+    table.close();
+    testingUtil.deleteTable(tableName);
+  }
+
+  @Test
+  public void testRead() throws Exception {
+    final String rowKey = "row1";
+    final Put p = new Put(Bytes.toBytes(rowKey));
+    p.addColumn(Bytes.toBytes(COLUMN_FAMILY),
+        Bytes.toBytes("column1"), Bytes.toBytes("value1"));
+    p.addColumn(Bytes.toBytes(COLUMN_FAMILY),
+        Bytes.toBytes("column2"), Bytes.toBytes("value2"));
+    table.put(p);
+
+    final HashMap<String, ByteIterator> result = new HashMap<String, ByteIterator>();
+    final Status status = client.read(tableName, rowKey, null, result);
+    assertEquals(Status.OK, status);
+    assertEquals(2, result.size());
+    assertEquals("value1", result.get("column1").toString());
+    assertEquals("value2", result.get("column2").toString());
+
+    client.cleanup(); // reset the shared states in client
+  }
+}
+```

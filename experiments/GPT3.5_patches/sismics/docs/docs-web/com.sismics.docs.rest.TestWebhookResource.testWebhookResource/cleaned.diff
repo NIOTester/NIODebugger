@@ -1,0 +1,12 @@
+@@ -84,5 +84,11 @@
+                 .get(JsonObject.class);
+         webhooks = json.getJsonArray("webhooks");
+         Assert.assertEquals(0, webhooks.size());
++
++       // Delete webhook1
++        target().path("/user/webhook1")
++                .request()
++                .cookie(TokenBasedSecurityFilter.COOKIE_NAME, adminToken)
++                .delete();
+     }
+ }

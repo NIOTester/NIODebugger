@@ -1,0 +1,79 @@
+@@ -171,16 +171,13 @@
+     @org.junit.Test
+     public void testJWTToSAMLTransformationRealm() throws Exception {
+         TokenValidateOperation validateOperation = new TokenValidateOperation();
+-
+         // Add Token Validator
+         JWTTokenValidator validator = new JWTTokenValidator();
+         validator.setRealmCodec(new CustomJWTRealmCodec());
+         validateOperation.setTokenValidators(Collections.singletonList(validator));
+-
+         // Add Token Provider
+         SAMLTokenProvider samlTokenProvider = new SAMLTokenProvider();
+         validateOperation.setTokenProviders(Collections.singletonList(samlTokenProvider));
+-
+         // Add STSProperties object
+         STSPropertiesMBean stsProperties = new StaticSTSProperties();
+         Crypto crypto = CryptoFactory.getInstance(getEncryptionProperties());
+@@ -193,7 +190,6 @@
+         stsProperties.setRealmParser(new CustomRealmParser());
+         stsProperties.setIdentityMapper(new CustomIdentityMapper());
+         validateOperation.setStsProperties(stsProperties);
+-
+         // Mock up a request
+         RequestSecurityTokenType request = new RequestSecurityTokenType();
+         JAXBElement<String> tokenType =
+@@ -201,22 +197,20 @@
+                 QNameConstants.TOKEN_TYPE, String.class, WSS4JConstants.WSS_SAML2_TOKEN_TYPE
+             );
+         request.getAny().add(tokenType);
+-
+         // Create a JWTToken
+         TokenProviderResponse providerResponse = createJWT();
+         Element wrapper = createTokenWrapper((String)providerResponse.getToken());
+         Document doc = wrapper.getOwnerDocument();
+-        wrapper = (Element)doc.appendChild(wrapper);
+-
++        if (doc.getDocumentElement() == null) {
++            wrapper = (Element)doc.appendChild(wrapper);
++        }
+         ValidateTargetType validateTarget = new ValidateTargetType();
+         validateTarget.setAny(wrapper);
+-
+         JAXBElement<ValidateTargetType> validateTargetType =
+             new JAXBElement<ValidateTargetType>(
+                 QNameConstants.VALIDATE_TARGET, ValidateTargetType.class, validateTarget
+             );
+         request.getAny().add(validateTargetType);
+-
+         // Mock up message context
+         MessageImpl msg = new MessageImpl();
+         WrappedMessageContext msgCtx = new WrappedMessageContext(msg);
+@@ -226,7 +220,6 @@
+             createSecurityContext(principal)
+         );
+         msgCtx.put("url", "https");
+-
+         // Validate a token - this will fail as the tokenProvider doesn't understand how to handle
+         // realm "B"
+         try {
+@@ -234,11 +227,9 @@
+         } catch (STSException ex) {
+             // expected
+         }
+-
+         samlTokenProvider.setRealmMap(createSamlRealms());
+         RequestSecurityTokenResponseType response = validateOperation.validate(request, principal, msgCtx);
+         assertTrue(validateResponse(response));
+-
+         // Test the generated token.
+         Element assertion = null;
+         for (Object tokenObject : response.getAny()) {
+@@ -250,7 +241,6 @@
+                 break;
+             }
+         }
+-
+         assertNotNull(assertion);
+         String tokenString = DOM2Writer.nodeToString(assertion);
+         assertTrue(tokenString.contains("AttributeStatement"));

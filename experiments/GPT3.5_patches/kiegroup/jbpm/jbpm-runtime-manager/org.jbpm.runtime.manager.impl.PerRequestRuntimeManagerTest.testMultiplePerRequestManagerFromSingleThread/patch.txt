@@ -1,0 +1,115 @@
+```java
+package org.jbpm.runtime.manager.impl;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import java.lang.reflect.UndeclaredThrowableException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+
+import javax.naming.InitialContext;
+import javax.transaction.UserTransaction;
+
+import org.jbpm.runtime.manager.util.TestUtil;
+import org.jbpm.services.task.identity.JBossUserGroupCallbackImpl;
+import org.jbpm.test.util.AbstractBaseTest;
+import org.kie.test.util.db.PoolingDataSourceWrapper;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.kie.api.event.process.DefaultProcessEventListener;
+import org.kie.api.event.process.ProcessCompletedEvent;
+import org.kie.api.event.process.ProcessEventListener;
+import org.kie.api.event.process.ProcessStartedEvent;
+import org.kie.api.io.ResourceType;
+import org.kie.api.runtime.KieSession;
+import org.kie.api.runtime.manager.RuntimeEngine;
+import org.kie.api.runtime.manager.RuntimeEnvironment;
+import org.kie.api.runtime.manager.RuntimeEnvironmentBuilder;
+import org.kie.api.runtime.manager.RuntimeManager;
+import org.kie.api.runtime.manager.RuntimeManagerFactory;
+import org.kie.api.runtime.manager.audit.AuditService;
+import org.kie.api.runtime.manager.audit.NodeInstanceLog;
+import org.kie.api.runtime.manager.audit.ProcessInstanceLog;
+import org.kie.api.runtime.process.ProcessInstance;
+import org.kie.api.task.TaskService;
+import org.kie.api.task.UserGroupCallback;
+import org.kie.api.task.model.Task;
+import org.kie.api.task.model.TaskSummary;
+import org.kie.internal.io.ResourceFactory;
+import org.kie.internal.runtime.manager.InternalRuntimeManager;
+import org.kie.internal.runtime.manager.context.EmptyContext;
+import org.kie.internal.runtime.manager.context.ProcessInstanceIdContext;
+
+public class PerRequestRuntimeManagerTest extends AbstractBaseTest {
+
+    private PoolingDataSourceWrapper pds;
+    private UserGroupCallback userGroupCallback;  
+    private RuntimeManager manager;
+    
+    @Before
+    public void setup() {
+        pds = TestUtil.setupPoolingDataSource();
+        Properties properties= new Properties();
+        properties.setProperty("mary", "HR");
+        properties.setProperty("john", "HR");
+        userGroupCallback = new JBossUserGroupCallbackImpl(properties);
+    }
+    
+    @After
+    public void teardown() {
+        if (manager != null) {
+            manager.close();
+        }
+        pds.close();
+    }
+    
+    @Test
+    public void testMultiplePerRequestManagerFromSingleThread() {
+        RuntimeEnvironment environment = RuntimeEnvironmentBuilder.Factory.get()
+                .newDefaultBuilder()
+                .userGroupCallback(userGroupCallback)
+                .addAsset(ResourceFactory.newClassPathResource("BPMN2-IntermediateCatchEventSignalWithRef.bpmn2"), ResourceType.BPMN2)
+                .get();
+        
+        manager = RuntimeManagerFactory.Factory.get().newPerRequestRuntimeManager(environment, "first");        
+        assertNotNull(manager);
+        
+        RuntimeEnvironment environment2 = RuntimeEnvironmentBuilder.Factory.get()
+                .newDefaultBuilder()
+                .userGroupCallback(userGroupCallback)
+                .addAsset(ResourceFactory.newClassPathResource("BPMN2-UserTask.bpmn2"), ResourceType.BPMN2)
+                .get();
+        
+        RuntimeManager manager2 = RuntimeManagerFactory.Factory.get().newPerRequestRuntimeManager(environment2, "second");        
+        assertNotNull(manager2);
+        // start first process instance with first manager
+        RuntimeEngine runtime1 = manager.getRuntimeEngine(EmptyContext.get());
+        KieSession ksession1 = runtime1.getKieSession();
+        assertNotNull(ksession1);                 
+        ProcessInstance processInstance = ksession1.startProcess("IntermediateCatchEventWithRef");
+        assertEquals(ProcessInstance.STATE_ACTIVE, processInstance.getState());
+        
+        // start another process instance of the same process just owned by another manager
+        RuntimeEngine runtime2 = manager2.getRuntimeEngine(EmptyContext.get());
+        KieSession ksession2 = runtime2.getKieSession();
+        assertNotNull(ksession2);         
+        ProcessInstance processInstance2 = ksession2.startProcess("UserTask");
+        assertEquals(ProcessInstance.STATE_ACTIVE, processInstance2.getState());
+        
+        manager.disposeRuntimeEngine(runtime1);
+        manager2.disposeRuntimeEngine(runtime2); // runtime2 is associated to manager2
+        
+        // close manager which will close session maintained by the manager
+        manager.close();
+        manager2.close();
+    }
+}
+```

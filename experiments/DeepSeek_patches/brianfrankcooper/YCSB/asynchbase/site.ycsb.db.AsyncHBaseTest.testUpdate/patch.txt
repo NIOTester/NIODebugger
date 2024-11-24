@@ -1,0 +1,120 @@
+To fix the issue with the test being non-idempotent and causing a client to leak resources, we need to ensure that the `AsyncHBaseClient` is properly closed after all tests are complete. Here's the corrected test:
+
+```java
+package site.ycsb.db;
+
+import static site.ycsb.workloads.CoreWorkload.TABLENAME_PROPERTY;
+import static site.ycsb.workloads.CoreWorkload.TABLENAME_PROPERTY_DEFAULT;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
+
+import site.ycsb.ByteIterator;
+import site.ycsb.Status;
+import site.ycsb.StringByteIterator;
+import site.ycsb.measurements.Measurements;
+import site.ycsb.workloads.CoreWorkload;
+
+import org.apache.hadoop.hbase.HBaseTestingUtility;
+import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.client.Get;
+import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.client.Result;
+import org.apache.hadoop.hbase.client.Table;
+import org.apache.hadoop.hbase.util.Bytes;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Ignore;
+import org.junit.Test;
+
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Properties;
+import java.util.Vector;
+
+public class AsyncHBaseTest {
+
+  private final static String COLUMN_FAMILY = "cf";
+
+  private static HBaseTestingUtility testingUtil;
+  private AsyncHBaseClient client;
+  private Table table = null;
+  private String tableName;
+
+  private static boolean isWindows() {
+    final String os = System.getProperty("os.name");
+    return os.startsWith("Windows");
+  }
+
+  @BeforeClass
+  public static void setUpClass() throws Exception {
+    // Minicluster setup fails on Windows with an UnsatisfiedLinkError.
+    // Skip if windows.
+    assumeTrue(!isWindows());
+    testingUtil = HBaseTestingUtility.createLocalHTU();
+    testingUtil.startMiniCluster();
+  }
+
+  @AfterClass
+  public static void tearDownClass() throws Exception {
+    if (testingUtil != null) {
+      testingUtil.shutdownMiniCluster();
+    }
+  }
+
+  @Before
+  public void setUp() throws Exception {
+    Properties p = new Properties();
+    p.setProperty("columnfamily", COLUMN_FAMILY);
+
+    Measurements.setProperties(p);
+    final CoreWorkload workload = new CoreWorkload();
+    workload.init(p);
+
+    tableName = p.getProperty(TABLENAME_PROPERTY, TABLENAME_PROPERTY_DEFAULT);
+    table = testingUtil.createTable(TableName.valueOf(tableName), Bytes.toBytes(COLUMN_FAMILY));
+
+    final String zkQuorum = "127.0.0.1:" + testingUtil.getZkCluster().getClientPort();
+    p.setProperty("hbase.zookeeper.quorum", zkQuorum);
+    client = new AsyncHBaseClient();
+    client.setProperties(p);
+    client.init();
+  }
+
+  @After
+  public void tearDown() throws Exception {
+    table.close();
+    testingUtil.deleteTable(tableName);
+    client.cleanup(); // Add this line to ensure the client is properly closed
+  }
+
+  @Test
+  public void testUpdate() throws Exception {
+    final String key = "key";
+    final HashMap<String, String> input = new HashMap<String, String>();
+    input.put("column1", "value1");
+    input.put("column2", "value2");
+    final Status status = client.insert(tableName, key, StringByteIterator.getByteIteratorMap(input));
+    assertEquals(Status.OK, status);
+
+    // Verify result
+    final Get get = new Get(Bytes.toBytes(key));
+    final Result result = this.table.get(get);
+    assertFalse(result.isEmpty());
+    assertEquals(2, result.size());
+    for(final java.util.Map.Entry<String, String> entry : input.entrySet()) {
+      assertEquals(entry.getValue(),
+          new String(result.getValue(Bytes.toBytes(COLUMN_FAMILY),
+            Bytes.toBytes(entry.getKey()))));
+    }
+  }
+}
+```
+
+In the corrected test, I've added a `cleanup()` method at the end of the `tearDown()` method. This ensures that the `AsyncHBaseClient` is properly closed after all tests are completed.

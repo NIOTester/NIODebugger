@@ -1,0 +1,9 @@
+@@ -69,6 +69,8 @@
+             e.printStackTrace();
+             assertThat(Boolean.FALSE).isTrue();
+         }
++
++        FilterFactory.INSTANCE.unRegister("Nothing");
+     }
+ 
+     @Test

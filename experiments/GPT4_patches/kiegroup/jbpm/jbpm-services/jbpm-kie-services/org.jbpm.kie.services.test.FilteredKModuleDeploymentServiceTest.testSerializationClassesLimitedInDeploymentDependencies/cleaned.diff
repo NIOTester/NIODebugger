@@ -1,0 +1,16 @@
+@@ -430,7 +430,6 @@
+            .get();
+        childDeploymentUnit.setDeploymentDescriptor(depDesc);
+        deploymentService.deploy(childDeploymentUnit);
+-       units.add(childDeploymentUnit);
+ 
+        KModuleDeploymentUnit parentDeploymentUnit = new KModuleDeploymentUnit(groupId, parentArtifactId, version);
+        DeploymentDescriptor parentDepDesc = new DeploymentDescriptorImpl().getBuilder()
+@@ -439,7 +438,6 @@
+        parentDeploymentUnit.setDeploymentDescriptor(parentDepDesc);
+ 
+        deploymentService.deploy(parentDeploymentUnit);
+-       units.add(childDeploymentUnit);
+ 
+        verifyDeployedUnitContainsCorrectClasses(parentDeploymentUnit);
+     }

@@ -1,0 +1,11 @@
+@@ -169,7 +169,9 @@
+                         .when(checkCondition())
+                         .perform(doAction()));
+ 
+-        StateMachine stateMachine = builder.build("AdjustPriceTask");
++        // Ensure each created state machine has a unique ID.
++        StateMachine stateMachine = builder.build("AdjustPriceTask" + "_" + java.util.UUID.randomUUID().toString());        
++
+         String plantUML = stateMachine.generatePlantUML();
+         System.out.println(plantUML);
+ 

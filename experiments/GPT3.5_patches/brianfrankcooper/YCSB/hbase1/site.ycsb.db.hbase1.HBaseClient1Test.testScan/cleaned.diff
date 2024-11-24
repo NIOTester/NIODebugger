@@ -1,0 +1,9 @@
+@@ -181,6 +181,8 @@
+       final int rowNum = buf.getInt();
+       assertEquals(i + 1, rowNum);
+     }
++
++    client.cleanup(); // clean up shared states modified by the test
+   }
+ 
+   @Test

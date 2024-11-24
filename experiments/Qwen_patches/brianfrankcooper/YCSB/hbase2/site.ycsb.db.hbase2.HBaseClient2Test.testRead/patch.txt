@@ -1,0 +1,23 @@
+```java
+@Test
+public void testRead() throws Exception {
+  setUp();
+  final String rowKey = "row1";
+  final Put p = new Put(Bytes.toBytes(rowKey));
+  p.addColumn(Bytes.toBytes(COLUMN_FAMILY),
+      Bytes.toBytes("column1"), Bytes.toBytes("value1"));
+  p.addColumn(Bytes.toBytes(COLUMN_FAMILY),
+      Bytes.toBytes("column2"), Bytes.toBytes("value2"));
+  table.put(p);
+
+  final HashMap<String, ByteIterator> result = new HashMap<String, ByteIterator>();
+  final Status status = client.read(tableName, rowKey, null, result);
+  assertEquals(Status.OK, status);
+  assertEquals(2, result.size());
+  assertEquals("value1", result.get("column1").toString());
+  assertEquals("value2", result.get("column2").toString());
+
+  client.cleanup(); // Clean up potential polluted states
+  client = null; // Reset the client object
+}
+```

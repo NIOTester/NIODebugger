@@ -1,0 +1,18 @@
+@@ -42,7 +42,7 @@
+  */
+ public class AsyncMultisubprocessTest extends JbpmTestCase {
+ 
+-    private static CountDownLatch latch = new CountDownLatch(1);
++    private CountDownLatch latch = null; // latch initialized before each test run
+ 
+     private static final String BPMN_AICS = "org/jbpm/test/functional/async/AsyncSubMultiprocess.bpmn2";
+     private static final String PROCESS_AICS = "TestSubMult";
+@@ -56,6 +56,8 @@
+         setupDataSource = true;
+         super.setUp();
+ 
++        latch = new CountDownLatch(1); // initialize latch
++
+         executorService = ExecutorServiceFactory.newExecutorService(getEmf());
+         executorService.setInterval(1);
+         executorService.init();

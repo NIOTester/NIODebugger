@@ -1,0 +1,11 @@
+@@ -101,6 +101,9 @@
+    */
+   @Before
+   public void setUp() throws Exception {
++    // clean up possible polluted states 
++    client.cleanup();
++
+     Properties p = new Properties();
+     p.setProperty("columnfamily", COLUMN_FAMILY);
+ 
+

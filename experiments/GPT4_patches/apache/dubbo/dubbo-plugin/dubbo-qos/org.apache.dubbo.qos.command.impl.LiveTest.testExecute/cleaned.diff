@@ -1,0 +1,8 @@
+@@ -35,6 +35,7 @@
+     @AfterEach
+     public void reset() {
+         frameworkModel.destroy();
++        MockLivenessProbe.setCheckReturnValue(false);
+     }
+ 
+     @Test

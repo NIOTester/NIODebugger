@@ -1,0 +1,18 @@
+@@ -61,6 +61,8 @@
+ 
+     @Test
+     public void testFail() {
++        String uniqueMachineId = MACHINE_ID + "-testFail-" + System.nanoTime();
++
+         StateMachineBuilder<States, Events, Context> builder = StateMachineBuilderFactory.create();
+         builder.externalTransition()
+             .from(States.STATE1)
+@@ -71,7 +73,7 @@
+ 
+         builder.setFailCallback(new AlertFailCallback<>());
+ 
+-        StateMachine<States, Events, Context> stateMachine = builder.build(MACHINE_ID + "-testFail");
++        StateMachine<States, Events, Context> stateMachine = builder.build(uniqueMachineId);
+         Assert.assertThrows(TransitionFailException.class,
+             () -> stateMachine.fireEvent(States.STATE2, Events.EVENT1, new Context()));
+     }

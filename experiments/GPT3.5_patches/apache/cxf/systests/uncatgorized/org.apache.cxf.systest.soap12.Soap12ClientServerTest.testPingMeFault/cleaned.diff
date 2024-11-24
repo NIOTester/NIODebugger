@@ -1,0 +1,28 @@
+@@ -64,7 +64,6 @@
+     public static void startServers() throws Exception {
+         assertTrue("server did not launch correctly", launchServer(Server.class, true));
+     }
+-
+     @Test
+     public void testBasicConnection() throws Exception {
+         Greeter greeter = getGreeter();
+@@ -72,9 +71,9 @@
+             String echo = greeter.sayHi();
+             assertEquals("Bonjour", echo);
+         }
+-
++    
+     }
+-
++ 
+     @Test
+     public void testPingMeFault() throws Exception {
+         Greeter greeter = getGreeter();
+@@ -109,6 +108,7 @@
+         httpConnection.addRequestProperty("Content-Type", "text/xml;charset=utf-8");
+         OutputStream reqout = httpConnection.getOutputStream();
+         IOUtils.copy(reqin, reqout);
++        reqin.close(); // close the input stream
+         reqout.close();
+ 
+         assertEquals(500, httpConnection.getResponseCode());

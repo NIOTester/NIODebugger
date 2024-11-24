@@ -1,0 +1,10 @@
+@@ -319,6 +319,9 @@
+     appController.attempts();
+ 
+     assertEquals(AttemptsPage.class, appController.getClazz());
++
++    // remove ATTEMPT_STATE at the end of the function
++    appController.getProperty().remove(AMParams.ATTEMPT_STATE);
+   }
+ 
+ }

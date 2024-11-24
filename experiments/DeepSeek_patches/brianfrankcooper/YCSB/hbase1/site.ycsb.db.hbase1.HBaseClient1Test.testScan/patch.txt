@@ -1,0 +1,16 @@
+To fix the test and ensure that the client is cleaned up, we need to modify the `tearDown` method in the `HBaseClient1Test` class to include a call to `client.cleanup()` after the test completes. This ensures that all resources are properly released, even if an exception occurs.
+
+Here's the updated `tearDown` method:
+
+```java
+@After
+public void tearDown() throws Exception {
+  table.close();
+  testingUtil.deleteTable(tableName);
+  
+  // Clean up the client
+  client.cleanup();
+}
+```
+
+By adding the `cleanup()` call at the end of the `tearDown` method, we ensure that the client is properly closed and all resources are released, even if an exception occurs during the test. This prevents memory leaks and ensures that the resources are properly managed.

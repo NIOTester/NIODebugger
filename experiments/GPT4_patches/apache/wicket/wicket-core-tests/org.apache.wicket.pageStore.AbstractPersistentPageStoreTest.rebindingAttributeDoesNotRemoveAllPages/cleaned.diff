@@ -1,0 +1,9 @@
+@@ -89,6 +89,8 @@
+ 		};
+ 		assertTrue(store.canBeAsynchronous(context));
+ 		
++		store.destroy();
++		
+ 	}
+ 
+ }

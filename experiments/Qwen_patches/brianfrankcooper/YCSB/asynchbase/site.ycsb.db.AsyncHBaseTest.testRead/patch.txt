@@ -1,0 +1,15 @@
+```java
+@After
+public void tearDown() throws Exception {
+    // Clean up resources used by the client
+    if (client != null) {
+        client.cleanup(); // reset the shared states in client
+    }
+    if (table != null) {
+        table.close();
+    }
+    if (tableName != null) {
+        testingUtil.deleteTable(tableName);
+    }
+}
+```

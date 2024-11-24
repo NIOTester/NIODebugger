@@ -1,0 +1,18 @@
+@@ -214,6 +214,8 @@
+     }
+     @Test
+     public void testParallel(){
++        String uniqueMachineId = "ParallelMachine_" + System.currentTimeMillis();
++
+         StateMachineBuilder<States, Events, Context> builder = StateMachineBuilderFactory.create();
+         builder.externalParallelTransition()
+                 .from(States.STATE1)
+@@ -227,7 +229,7 @@
+                 .on(StateMachineTest.Events.EVENT2)
+                 .when(checkCondition())
+                 .perform(doAction());
+-        StateMachine<States, Events, Context> stateMachine = builder.build("ParallelMachine");
++        StateMachine<States, Events, Context> stateMachine = builder.build(uniqueMachineId);
+         System.out.println(stateMachine.generatePlantUML());
+         List<States> states = stateMachine.fireParallelEvent(StateMachineTest.States.STATE1, StateMachineTest.Events.EVENT1, new Context());
+         for (StateMachineTest.States state : states) {

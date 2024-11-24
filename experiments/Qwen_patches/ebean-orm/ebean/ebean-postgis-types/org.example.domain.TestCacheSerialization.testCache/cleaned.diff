@@ -1,0 +1,10 @@
+@@ -36,6 +36,9 @@
+     assertEquals(p1, r2.getPoint());  // and did fail https://github.com/ebean-orm/ebean/issues/3026
+     assertEquals(pol, r2.getPolygon());
+ 
++    // Delete the bean from the database so that repeated tests can test insertion again
++    DB.delete(tb);
++
+   }
+ 
+   @Test

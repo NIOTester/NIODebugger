@@ -1,0 +1,23 @@
+@@ -182,21 +182,16 @@
+         Bean b = new Bean();
+         Field fname = Bean.class.getDeclaredField("name");
+         fname.setAccessible(true);
+-
+         ClassGenerator cg = ClassGenerator.newInstance();
+-        cg.setClassName(Bean.class.getName() + "$Builder");
++        cg.setClassName(Bean.class.getName() + "$Builder" + System.currentTimeMillis());
+         cg.addInterface(Builder.class);
+-
+         cg.addField("public static java.lang.reflect.Field FNAME;");
+-
+         cg.addMethod("public Object getName(" + Bean.class.getName()
+                 + " o){ boolean[][][] bs = new boolean[0][][]; return (String)FNAME.get($1); }");
+         cg.addMethod("public void setName(" + Bean.class.getName() + " o, Object name){ FNAME.set($1, $2); }");
+-
+         cg.addDefaultConstructor();
+         Class<?> cl = cg.toClass(Bean.class);
+         cl.getField("FNAME").set(null, fname);
+-
+         System.out.println(cl.getName());
+         Builder<String> builder = (Builder<String>) cl.getDeclaredConstructor().newInstance();
+         System.out.println(b.getName());

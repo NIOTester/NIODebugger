@@ -1,0 +1,8 @@
+@@ -45,6 +45,7 @@
+   public void setUp() throws Exception {
+     super.setUp();
+     TestVerticle.instanceCount.set(0);
++    ReferenceSavingMyVerticle.myVerticles.clear();
+   }
+ 
+   @Test

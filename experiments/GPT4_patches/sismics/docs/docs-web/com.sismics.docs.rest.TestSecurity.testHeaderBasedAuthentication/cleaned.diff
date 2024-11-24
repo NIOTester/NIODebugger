@@ -1,0 +1,14 @@
+@@ -98,7 +98,12 @@
+                 .request()
+                 .header(HeaderBasedSecurityFilter.AUTHENTICATED_USER_HEADER, "idontexist")
+                 .get()
+-                .getStatus()); 
++                .getStatus());
++        // Delete the user
++        String adminToken = adminToken();
++        target().path("/user/header_auth_test").request()
++                .cookie(TokenBasedSecurityFilter.COOKIE_NAME, adminToken)
++                .delete(); 
+     }
+ }
+ 

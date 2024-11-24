@@ -1,0 +1,9 @@
+@@ -140,6 +140,8 @@
+     assertEquals(2, result.size());
+     assertEquals("value1", result.get("column1").toString());
+     assertEquals("value2", result.get("column2").toString());
++
++    client.cleanup(); // reset the shared states in client
+   }
+ 
+   @Test

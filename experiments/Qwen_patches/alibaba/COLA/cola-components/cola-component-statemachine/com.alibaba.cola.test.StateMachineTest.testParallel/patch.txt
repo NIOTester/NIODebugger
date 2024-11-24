@@ -1,0 +1,33 @@
+The test is not idempotent as `builder.build()` does not allow building two state machines with the same ID. To fix the issue with non-idempotency, we can make the following change:
+
+```java
+@Test
+public void testParallel() {
+    StateMachineBuilder<States, Events, Context> builder = StateMachineBuilderFactory.create();
+    builder.externalParallelTransition()
+            .from(States.STATE1)
+            .toAmong(States.STATE2, States.STATE3)
+            .on(StateMachineTest.Events.EVENT1)
+            .when(checkCondition())
+            .perform(doAction());
+    builder.externalTransitions()
+            .fromAmong(StateMachineTest.States.STATE2, StateMachineTest.States.STATE3)
+            .to(StateMachineTest.States.STATE4)
+            .on(StateMachineTest.Events.EVENT2)
+            .when(checkCondition())
+            .perform(doAction());
+    // Use a random string to build a state machine
+    StateMachine<States, Events, Context> stateMachine = builder.build(java.util.UUID.randomUUID().toString());
+    System.out.println(stateMachine.generatePlantUML());
+    List<States> states = stateMachine.fireParallelEvent(StateMachineTest.States.STATE1, StateMachineTest.Events.EVENT1, new Context());
+    for (StateMachineTest.States state : states) {
+        System.out.println(state);
+    }
+    States target2 = stateMachine.fireEvent(StateMachineTest.States.STATE2, StateMachineTest.Events.EVENT2, new Context());
+    Assert.assertEquals(States.STATE4, target2);
+    States target3 = stateMachine.fireEvent(StateMachineTest.States.STATE3, StateMachineTest.Events.EVENT2, new Context());
+    Assert.assertEquals(States.STATE4, target3);
+}
+```
+
+With this change, the builder will not attempt to build a state machine with a conflicting id.

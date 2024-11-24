@@ -1,0 +1,41 @@
+```
+public class StateMachineTest {
+    static String MACHINE_ID = "TestStateMachine";
+
+    static enum States {
+        STATE1,
+        STATE2,
+        STATE3,
+        STATE4
+    }
+
+    static enum Events {
+        EVENT1,
+        EVENT2,
+        EVENT3,
+        EVENT4,
+        INTERNAL_EVENT
+    }
+
+    static class Context {
+        String operator = "frank";
+        String entityId = "123465";
+    }
+
+    @Test
+    public void testVerify() {
+        StateMachineBuilder<States, Events, Context> builder = StateMachineBuilderFactory.create();
+        builder.externalTransition()
+            .from(States.STATE1)
+            .to(States.STATE2)
+            .on(Events.EVENT1)
+            .when(checkCondition())
+            .perform(doAction());
+
+        // Build a state machine with a random ID
+        StateMachine<States, Events, Context> stateMachine = builder.build(java.util.UUID.randomUUID().toString());
+        Assert.assertTrue(stateMachine.verify(States.STATE1, Events.EVENT1));
+        Assert.assertFalse(stateMachine.verify(States.STATE1, Events.EVENT2));
+    }
+}
+```

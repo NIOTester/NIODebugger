@@ -1,0 +1,18 @@
+@@ -13,6 +13,7 @@
+ import org.junit.Test;
+ 
+ import java.util.List;
++import java.util.UUID;
+ 
+ /**
+  * StateMachineTest
+@@ -124,7 +125,8 @@
+ 
+     @Test
+     public void testExternalInternalNormal() {
+-        StateMachine<States, Events, Context> stateMachine = buildStateMachine("testExternalInternalNormal");
++        String uniqueMachineId = UUID.randomUUID().toString() + "_testExternalInternalNormal";
++        StateMachine<States, Events, Context> stateMachine = buildStateMachine(uniqueMachineId);
+ 
+         Context context = new Context();
+         States target = stateMachine.fireEvent(States.STATE1, Events.EVENT1, context);

@@ -1,0 +1,9 @@
+@@ -117,6 +117,8 @@
+         
+         processInstance = ksession.getProcessInstance(processInstance.getId());
+         assertNull(processInstance);
++
++        manager.disposeRuntimeEngine(runtime); // dispose the runtime engine again to avoid state pollution
+         
+         // close manager which will close session maintained by the manager
+         manager.close();

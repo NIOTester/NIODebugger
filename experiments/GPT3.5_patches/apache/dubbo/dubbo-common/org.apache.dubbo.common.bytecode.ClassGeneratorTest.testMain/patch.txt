@@ -1,0 +1,70 @@
+To make the test idempotent, you can add a millisecond timestamp to the class name in the cg.setClassName call. This ensures that each time the test runs, the generated class will have a unique name, avoiding conflicts between multiple test runs.
+
+```java
+package org.apache.dubbo.common.bytecode;
+
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import javassist.ClassPool;
+
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+
+interface Builder<T> {
+    T getName(Bean bean);
+
+    void setName(Bean bean, T name);
+}
+
+class BaseClass {
+
+    public BaseClass() {}
+
+    public BaseClass(StringBuilder sb) {
+        sb.append("constructor comes from BaseClass");
+    }
+
+    public String baseClassMethod() {
+        return "method comes from BaseClass";
+    }
+}
+
+interface BaseInterface {}
+
+class ClassGeneratorTest {
+    @SuppressWarnings("unchecked")
+    @Test
+    void testMain() throws Exception {
+        Bean b = new Bean();
+        Field fname = Bean.class.getDeclaredField("name");
+        fname.setAccessible(true);
+
+        ClassGenerator cg = ClassGenerator.newInstance();
+        cg.setClassName(Bean.class.getName() + "$Builder" + System.currentTimeMillis());  // Added timestamp to ensure uniqueness
+        cg.addInterface(Builder.class);
+
+        cg.addField("public static java.lang.reflect.Field FNAME;");
+
+        cg.addMethod("public Object getName(" + Bean.class.getName()
+                + " o){ boolean[][][] bs = new boolean[0][][]; return (String)FNAME.get($1); }");
+        cg.addMethod("public void setName(" + Bean.class.getName() + " o, Object name){ FNAME.set($1, $2); }");
+
+        cg.addDefaultConstructor();
+        Class<?> cl = cg.toClass(Bean.class);
+        cl.getField("FNAME").set(null, fname);
+
+        System.out.println(cl.getName());
+        Builder<String> builder = (Builder<String>) cl.getDeclaredConstructor().newInstance();
+        System.out.println(b.getName());
+        builder.setName(b, "ok");
+        System.out.println(b.getName());
+    }
+}
+```
+
+This simple addition makes the generated class name unique across multiple test executions, making the test idempotent.

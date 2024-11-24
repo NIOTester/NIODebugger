@@ -1,0 +1,10 @@
+@@ -29,5 +29,9 @@
+ 
+         // Authenticate using the database
+         Assert.assertNotNull(new InternalAuthenticationHandler().authenticate("testJpa", "12345678"));
++       
++        // Delete the user
++        userDao.delete(username, user.getId());
++        TransactionUtil.commit();
+     }
+ }

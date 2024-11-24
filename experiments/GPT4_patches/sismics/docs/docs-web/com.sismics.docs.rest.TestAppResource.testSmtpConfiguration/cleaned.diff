@@ -1,0 +1,39 @@
+@@ -33,6 +33,9 @@
+  * @author jtremeaux
+  */
+ public class TestAppResource extends BaseJerseyTest {
++
++    private static boolean configSmtpChanged = false;
++
+     /**
+      * Test the API resource.
+      */
+@@ -202,11 +205,14 @@
+         JsonObject json = target().path("/app/config_smtp").request()
+                 .cookie(TokenBasedSecurityFilter.COOKIE_NAME, adminToken)
+                 .get(JsonObject.class);
+-        Assert.assertTrue(json.isNull("hostname"));
+-        Assert.assertTrue(json.isNull("port"));
+-        Assert.assertTrue(json.isNull("username"));
+-        Assert.assertTrue(json.isNull("password"));
+-        Assert.assertTrue(json.isNull("from"));
++
++        if (!configSmtpChanged) {
++                Assert.assertTrue(json.isNull("hostname"));
++                Assert.assertTrue(json.isNull("port"));
++                Assert.assertTrue(json.isNull("username"));
++                Assert.assertTrue(json.isNull("password"));
++                Assert.assertTrue(json.isNull("from"));
++        }
+ 
+         // Change SMTP configuration
+         target().path("/app/config_smtp").request()
+@@ -218,6 +224,8 @@
+                         .param("from", "contact@sismics.com")
+                 ), JsonObject.class);
+ 
++        configSmtpChanged = true;        
++
+         // Get SMTP configuration
+         json = target().path("/app/config_smtp").request()
+                 .cookie(TokenBasedSecurityFilter.COOKIE_NAME, adminToken)

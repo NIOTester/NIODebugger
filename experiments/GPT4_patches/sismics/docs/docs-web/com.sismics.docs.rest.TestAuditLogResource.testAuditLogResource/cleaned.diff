@@ -1,0 +1,12 @@
+@@ -120,6 +120,11 @@
+         Assert.assertEquals(countByClass(logs, "Acl"), 2);
+         Assert.assertEquals(countByClass(logs, "File"), 1);
+ 
++        // Delete auditlog1
++        String adminToken = adminToken();
++        target().path("/user/auditlog1").request()
++                .cookie(TokenBasedSecurityFilter.COOKIE_NAME, adminToken)
++                .delete();
+     }
+     
+     /**

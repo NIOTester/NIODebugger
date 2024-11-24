@@ -1,0 +1,12 @@
+@@ -162,8 +162,10 @@
+                        .on(event)
+                        .when(checkCondition())
+                        .perform(doAction()));
+         
+-        StateMachine stateMachine = builder.build("AdjustPriceTask");
++        // Add a timestamp to the state machine id
++        String stateMachineId = "AdjustPriceTask" + System.currentTimeMillis();
++        StateMachine stateMachine = builder.build(stateMachineId);
+         String plantUML = stateMachine.generatePlantUML();
+         System.out.println(plantUML);
+

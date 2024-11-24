@@ -1,0 +1,10 @@
+@@ -182,7 +182,8 @@
+ 
+     @Test
+     public void testMultiThread() {
+-        buildStateMachine("testMultiThread");
++        String uniqueMachineId = "testMultiThread_" + System.nanoTime();
++        buildStateMachine(uniqueMachineId);
+ 
+         for (int i = 0; i < 10; i++) {
+             Thread thread = new Thread(() -> {

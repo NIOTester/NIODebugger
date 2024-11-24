@@ -1,0 +1,8 @@
+@@ -122,6 +122,7 @@
+   public void tearDown() throws Exception {
+     table.close();
+     testingUtil.deleteTable(tableName); 
++    client.cleanup(); // clean up the client to prevent state pollution
+   }
+ 
+   @Test

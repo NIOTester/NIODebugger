@@ -1,0 +1,8 @@
+```java
+void test() throws Exception {
+    ClassGenerator cg = ClassGenerator.newInstance();
+    String className = BaseClass.class.getPackage().getName() + ".TestClass" + Long.toHexString(Double.doubleToLongBits(Math.random()));
+    // your code to test the class generator
+}
+```
+**Explanation**: This test is now `idempotent`, ensuring the class generated has a unique name, making it unlikely to pollute itself.

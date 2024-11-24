@@ -1,0 +1,9 @@
+@@ -120,6 +120,8 @@
+   public void tearDown() throws Exception {
+     table.close();
+     testingUtil.deleteTable(tableName);
++    client.cleanup(); // Cleanup client
++    client = null;  // Setting client to null after cleanup
+   }
+ 
+   @Test

@@ -1,0 +1,9 @@
+@@ -56,7 +56,7 @@
+         ClassGenerator cg = ClassGenerator.newInstance();
+ 
+         // add className, interface, superClass
+-        String className = BaseClass.class.getPackage().getName() + ".TestClass";
++        String className = BaseClass.class.getPackage().getName() + ".TestClass" + System.currentTimeMillis();  // Added milliseconds to ensure uniqueness
+         cg.setClassName(className);
+         cg.addInterface(BaseInterface.class);
+         cg.setSuperClass(BaseClass.class);

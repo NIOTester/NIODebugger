@@ -1,0 +1,117 @@
+The test can be fixed by assigning a unique ID to each state machine. Here’s the updated test code with `System.currentTimeMillis()` used to ensure idempotency in the machine ID:
+
+```java
+package com.alibaba.cola.test;
+
+/**
+ * StateMachineTest
+ * 
+ * @author Frank Zhang
+ * @date 2020-02-08 12:19 PM
+ */
+public class StateMachineTest {
+    static enum States {
+        STATE1,
+        STATE2,
+        STATE3,
+        STATE4
+    }
+
+    static enum Events {
+        EVENT1,
+        EVENT2,
+        EVENT3,
+        EVENT4,
+        INTERNAL_EVENT
+    }
+
+    static class Context {
+        String operator = "frank";
+        String entityId = "123465";
+    }
+
+    private StateMachine<States, Events, Context> buildStateMachine(String machineId) {
+        StateMachineBuilder<States, Events, Context> builder = StateMachineBuilderFactory.create();
+        builder.externalTransition()
+                .from(States.STATE1)
+                .to(States.STATE2)
+                .on(Events.EVENT1)
+                .when(checkCondition())
+                .perform(doAction());
+        builder.internalTransition()
+                .within(States.STATE2)
+                .on(Events.INTERNAL_EVENT)
+                .when(checkCondition())
+                .perform(doAction());
+        builder.externalTransition()
+                .from(States.STATE2)
+                .to(States.STATE1)
+                .on(Events.EVENT2)
+                .when(checkCondition())
+                .perform(doAction());
+        builder.externalTransition()
+                .from(States.STATE1)
+                .to(States.STATE3)
+                .on(Events.EVENT3)
+                .when(checkCondition())
+                .perform(doAction());
+        builder.externalTransitions()
+                .fromAmong(States.STATE1, States.STATE2, States.STATE3)
+                .to(States.STATE4)
+                .on(Events.EVENT4)
+                .when(checkCondition())
+                .perform(doAction());
+        builder.build(machineId);
+        StateMachine<States, Events, Context> stateMachine = StateMachineFactory.get(machineId);
+        stateMachine.showStateMachine();
+        return stateMachine;
+    }
+
+    @Test
+    public void testParallel() {
+        String uniqueMachineId = "ParallelMachine_" + System.currentTimeMillis();
+        StateMachineBuilder<States, Events, Context> builder = StateMachineBuilderFactory.create();
+        builder.externalParallelTransition()
+                .from(States.STATE1)
+                .toAmong(States.STATE2, States.STATE3)
+                .on(StateMachineTest.Events.EVENT1)
+                .when(checkCondition())
+                .perform(doAction());
+        builder.externalTransitions()
+                .fromAmong(StateMachineTest.States.STATE2, StateMachineTest.States.STATE3)
+                .to(StateMachineTest.States.STATE4)
+                .on(StateMachineTest.Events.EVENT2)
+                .when(checkCondition())
+                .perform(doAction());
+        StateMachine<States, Events, Context> stateMachine = builder.build(uniqueMachineId);
+        System.out.println(stateMachine.generatePlantUML());
+        List<States> states = stateMachine.fireParallelEvent(StateMachineTest.States.STATE1, StateMachineTest.Events.EVENT1, new Context());
+        for (StateMachineTest.States state : states) {
+            System.out.println(state);
+        }
+        States target2 = stateMachine.fireEvent(StateMachineTest.States.STATE2, StateMachineTest.Events.EVENT2, new Context());
+        Assert.assertEquals(States.STATE4, target2);
+        States target3 = stateMachine.fireEvent(StateMachineTest.States.STATE3, StateMachineTest.Events.EVENT2, new Context());
+        Assert.assertEquals(States.STATE4, target3);
+    }
+
+    private Condition<Context> checkCondition() {
+        return new Condition<Context>() {
+            @Override
+            public boolean isSatisfied(Context context) {
+                System.out.println("Check condition : " + context);
+                return true;
+            }
+        };
+    }
+
+    private Action<States, Events, Context> doAction() {
+        return (from, to, event, ctx) -> {
+            System.out.println(
+                    ctx.operator + " is operating " + ctx.entityId + " from:" + from + " to:" + to + " on:" + event);
+        };
+    }
+}
+```
+
+The machine ID (`"ParallelMachine"`) is now appended with `System.currentTimeMillis()` to make it unique for each test execution. The unique machine ID is used consistently in the test method to ensure idempotency.

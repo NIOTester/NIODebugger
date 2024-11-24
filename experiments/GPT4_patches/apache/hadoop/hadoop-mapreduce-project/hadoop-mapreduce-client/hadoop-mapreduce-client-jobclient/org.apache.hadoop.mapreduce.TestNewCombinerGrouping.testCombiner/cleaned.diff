@@ -1,0 +1,13 @@
+@@ -105,7 +105,11 @@
+ 
+   @Test
+   public void testCombiner() throws Exception {
+-    if (!new File(TEST_ROOT_DIR).mkdirs()) {
++    File testDir = new File(TEST_ROOT_DIR);
++    if (testDir.exists()) {
++      FileUtil.fullyDelete(testDir);
++    }
++    if (!testDir.mkdirs()) {
+       throw new RuntimeException("Could not create test dir: " + TEST_ROOT_DIR);
+     }
+     File in = new File(TEST_ROOT_DIR, "input");

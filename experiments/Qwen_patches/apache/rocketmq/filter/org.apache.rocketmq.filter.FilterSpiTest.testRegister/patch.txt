@@ -1,0 +1,9 @@
+The test provided contains an issue with the `FilterFactory` instance not cleared after execution. Below is a fix that should be applied to ensure that each iteration of the test passes.
+
+```java
+@Test
+public void testRegister() {
+    // your test code
+    FilterFactory.INSTANCE.unRegister("Nothing");
+}
+```

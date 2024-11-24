@@ -1,0 +1,18 @@
+@@ -13,6 +13,7 @@
+ import org.junit.Test;
+ 
+ import java.util.List;
++import java.util.UUID;
+ 
+ /**
+  * StateMachineTest
+@@ -182,7 +183,8 @@
+ 
+     @Test
+     public void testMultiThread() {
+-        buildStateMachine("testMultiThread");
++        String machineId = UUID.randomUUID().toString();
++        buildStateMachine(machineId);
+ 
+         for (int i = 0; i < 10; i++) {
+             Thread thread = new Thread(() -> {

@@ -1,0 +1,11 @@
+@@ -181,6 +181,10 @@
+       final int rowNum = buf.getInt();
+       assertEquals(i + 1, rowNum);
+     }
++
++    // clean up the client
++    client.cleanup();
++    client = null;
+   }
+ 
+   @Test

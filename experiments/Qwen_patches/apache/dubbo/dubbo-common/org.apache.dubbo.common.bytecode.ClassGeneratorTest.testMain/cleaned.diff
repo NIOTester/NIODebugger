@@ -1,0 +1,11 @@
+@@ -184,7 +184,9 @@
+         fname.setAccessible(true);
+ 
+         ClassGenerator cg = ClassGenerator.newInstance();
+-        cg.setClassName(Bean.class.getName() + "$Builder");
++        
++        // Attempt to set a unique class name
++        cg.setClassName(Bean.class.getName() + "$Builder" + java.util.UUID.randomUUID().toString()); 
+         cg.addInterface(Builder.class);
+ 
+         cg.addField("public static java.lang.reflect.Field FNAME;");

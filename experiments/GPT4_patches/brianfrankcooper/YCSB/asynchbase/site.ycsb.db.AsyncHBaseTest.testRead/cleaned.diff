@@ -1,0 +1,8 @@
+@@ -92,6 +92,7 @@
+     if (testingUtil != null) {
+       testingUtil.shutdownMiniCluster();
+     }
++    testingUtil = null; // Reset the HBaseTestingUtility instance
+   }
+ 
+   /**

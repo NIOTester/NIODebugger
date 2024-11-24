@@ -1,0 +1,21 @@
+@@ -27,6 +27,7 @@
+ import org.apache.wicket.model.Model;
+ import org.apache.wicket.util.tester.WicketTestCase;
+ import org.junit.jupiter.api.Test;
++import org.junit.jupiter.api.AfterEach;
+ 
+ /**
+  * Test for {@link AbstractPageableView}. 
+@@ -35,6 +36,12 @@
+ {
+ 	private static int count = 5;	
+ 
++	@AfterEach
++	public void teardown() {
++        	// Reset count to 5 after each test
++		count = 5;
++	}
++
+ 	/**
+ 	 */
+ 	@Test

@@ -1,0 +1,8 @@
+@@ -97,6 +97,7 @@
+    * Re-create the table for each test. Using default properties.
+    */
+   public void setUp() throws Exception {
++    client.cleanup();
+     setUp(new Properties());
+   }
+ 

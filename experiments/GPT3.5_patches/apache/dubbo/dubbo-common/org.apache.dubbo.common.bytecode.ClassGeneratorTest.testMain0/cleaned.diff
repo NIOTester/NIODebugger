@@ -1,0 +1,9 @@
+@@ -211,7 +211,7 @@
+         fname.setAccessible(true);
+ 
+         ClassGenerator cg = ClassGenerator.newInstance();
+-        cg.setClassName(Bean.class.getName() + "$Builder2");
++        cg.setClassName(Bean.class.getName() + "$Builder2" + (int)(Math.random() * 1000));  // Added random number to ensure uniqueness
+         cg.addInterface(Builder.class);
+ 
+         cg.addField("FNAME", Modifier.PUBLIC | Modifier.STATIC, java.lang.reflect.Field.class);

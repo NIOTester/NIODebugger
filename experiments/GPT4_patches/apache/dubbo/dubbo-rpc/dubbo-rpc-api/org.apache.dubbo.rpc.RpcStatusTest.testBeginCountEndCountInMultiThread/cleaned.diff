@@ -1,0 +1,10 @@
+@@ -67,6 +67,9 @@
+         URL url = new ServiceConfigURL("dubbo", "127.0.0.1", 91032, DemoService.class.getName());
+         String methodName = "testBeginCountEndCountInMultiThread";
+ 
++        RpcStatus.removeStatus(url);
++        RpcStatus.removeStatus(url, methodName);
++ 
+         int max = 50;
+         int threadNum = 10;
+         AtomicInteger successCount = new AtomicInteger();

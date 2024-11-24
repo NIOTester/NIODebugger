@@ -1,0 +1,26 @@
+@@ -14,6 +14,8 @@
+ 
+ import java.util.List;
+ 
++import java.util.UUID;
++
+ /**
+  * StateMachineTest
+  *
+@@ -214,6 +216,7 @@
+     }
+     @Test
+     public void testParallel(){
++        String uniqueID = UUID.randomUUID().toString();
+         StateMachineBuilder<States, Events, Context> builder = StateMachineBuilderFactory.create();
+         builder.externalParallelTransition()
+                 .from(States.STATE1)
+@@ -227,7 +230,7 @@
+                 .on(StateMachineTest.Events.EVENT2)
+                 .when(checkCondition())
+                 .perform(doAction());
+-        StateMachine<States, Events, Context> stateMachine = builder.build("ParallelMachine");
++        StateMachine<States, Events, Context> stateMachine = builder.build(uniqueID);
+         System.out.println(stateMachine.generatePlantUML());
+         List<States> states = stateMachine.fireParallelEvent(StateMachineTest.States.STATE1, StateMachineTest.Events.EVENT1, new Context());
+         for (StateMachineTest.States state : states) {

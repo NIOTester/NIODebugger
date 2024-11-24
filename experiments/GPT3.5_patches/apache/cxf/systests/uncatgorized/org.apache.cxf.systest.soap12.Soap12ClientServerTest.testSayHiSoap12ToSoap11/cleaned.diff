@@ -1,0 +1,30 @@
+@@ -136,15 +136,22 @@
+     }
+ 
+     private Greeter getGreeter() throws NumberFormatException, MalformedURLException {
+-        URL wsdl = getClass().getResource("/wsdl/hello_world_soap12.wsdl");
+-        assertNotNull("WSDL is null", wsdl);
++        if (greeter == null) { // Check if already created
++            synchronized (lock) { // Ensure thread-safe initialization
++                if (greeter == null) {
++                    URL wsdl = getClass().getResource("/wsdl/hello_world_soap12.wsdl");
++                    assertNotNull("WSDL is null", wsdl);
+ 
+-        SOAPService service = new SOAPService(wsdl, serviceName);
+-        assertNotNull("Service is ull ", service);
++                    SOAPService service = new SOAPService(wsdl, serviceName);
++                    assertNotNull("Service is null", service);
+ 
+-        Greeter g = service.getPort(portName, Greeter.class);
+-        updateAddressPort(g, PORT);
+-        return g;
++                    Greeter g = service.getPort(portName, Greeter.class);
++                    updateAddressPort(g, PORT); // Ensure local changes only
++                    greeter = g; // Cache the instance
++                }
++            }
++        }
++        return greeter; // Return cached instance
+     }
+ 
+ }

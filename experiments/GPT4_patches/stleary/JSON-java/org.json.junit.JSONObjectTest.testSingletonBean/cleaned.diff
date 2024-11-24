@@ -1,0 +1,21 @@
+@@ -5,6 +5,7 @@
+ Public Domain.
+ */
+ 
++import org.junit.Before;
+ import static org.junit.Assert.assertEquals;
+ import static org.junit.Assert.assertFalse;
+ import static org.junit.Assert.assertNotEquals;
+@@ -76,6 +77,12 @@
+      */
+     static final Pattern NUMBER_PATTERN = Pattern.compile("-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?");
+     
++    @Before
++    public void setUp() {
++        Singleton.getInstance().setSomeInt(0);
++        Singleton.getInstance().setSomeString(null);
++    }
++
+     /**
+      * Tests that the similar method is working as expected.
+      */

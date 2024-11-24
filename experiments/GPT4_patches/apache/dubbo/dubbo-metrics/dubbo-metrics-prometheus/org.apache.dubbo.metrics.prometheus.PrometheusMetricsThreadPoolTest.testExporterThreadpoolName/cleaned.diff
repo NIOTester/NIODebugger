@@ -1,0 +1,28 @@
+@@ -62,6 +62,8 @@
+ 
+     DefaultMetricsCollector metricsCollector;
+ 
++    HttpServer prometheusExporterHttpServer;    
++
+     @BeforeEach
+     public void setup() {
+         applicationModel = ApplicationModel.defaultModel();
+@@ -77,6 +79,9 @@
+     @AfterEach
+     public void teardown() {
+         applicationModel.destroy();
++        if (prometheusExporterHttpServer != null) {
++            prometheusExporterHttpServer.stop(0);
++        }
+     }
+ 
+     @Test
+@@ -121,7 +126,7 @@
+ 
+     private void exportHttpServer(PrometheusMetricsReporter reporter, int port) {
+         try {
+-            HttpServer prometheusExporterHttpServer = HttpServer.create(new InetSocketAddress(port), 0);
++            prometheusExporterHttpServer = HttpServer.create(new InetSocketAddress(port), 0);
+             prometheusExporterHttpServer.createContext("/metrics", httpExchange -> {
+                 reporter.resetIfSamplesChanged();
+                 String response = reporter.getPrometheusRegistry().scrape();

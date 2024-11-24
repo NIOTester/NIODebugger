@@ -1,0 +1,18 @@
+@@ -78,16 +78,7 @@
+ 
+     @Test
+     public void testVerify() {
+-        StateMachineBuilder<States, Events, Context> builder = StateMachineBuilderFactory.create();
+-        builder.externalTransition()
+-            .from(States.STATE1)
+-            .to(States.STATE2)
+-            .on(Events.EVENT1)
+-            .when(checkCondition())
+-            .perform(doAction());
+-
+-        StateMachine<States, Events, Context> stateMachine = builder.build(MACHINE_ID + "-testVerify");
+-
++        StateMachine<States, Events, Context> stateMachine = buildStateMachine(MACHINE_ID + "-testVerify" + System.currentTimeMillis());
+         Assert.assertTrue(stateMachine.verify(States.STATE1, Events.EVENT1));
+         Assert.assertFalse(stateMachine.verify(States.STATE1, Events.EVENT2));
+     }

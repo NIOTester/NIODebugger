@@ -1,0 +1,41 @@
+```java
+package org.apache.dubbo.qos.command.impl;
+
+import org.apache.dubbo.qos.api.CommandContext;
+import org.apache.dubbo.rpc.model.FrameworkModel;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+class LiveTest {
+    private FrameworkModel frameworkModel;
+
+    @BeforeEach
+    public void setUp() {
+        frameworkModel = new FrameworkModel();
+    }
+
+    @AfterEach
+    public void reset() {
+        frameworkModel.destroy();
+    }
+
+    @Test
+    void testExecute() {
+        Live live = new Live(frameworkModel);
+        CommandContext commandContext = new CommandContext("live");
+        String result = live.execute(commandContext, new String[0]);
+        Assertions.assertEquals(result, "false");
+        Assertions.assertEquals(commandContext.getHttpCode(), 503);
+
+        MockLivenessProbe.setCheckReturnValue(true);
+        result = live.execute(commandContext, new String[0]);
+        Assertions.assertEquals(result, "true");
+        Assertions.assertEquals(commandContext.getHttpCode(), 200);
+
+        MockLivenessProbe.setCheckReturnValue(false); // reset check return value to false
+    }
+}
+```

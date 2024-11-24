@@ -1,0 +1,22 @@
+To ensure that testing the state machines with the same input are idempotent (each statemachine can be fired exactly once under these conditions), we need to ensure that the string passed into the builder is unique regardless of how many times the test run was triggered. Below is the corrected implementation that passes unique strings in repeat testing and make the tests idempotent.
+
+### Original Tests Code
+
+```java
+@Test
+public void testChoice() {
+    // Your existing code
+    StateMachine<StateMachineTest.States, StateMachineTest.Events, Context> stateMachine = builder.build("ChoiceConditionMachine");
+    // Your existing code
+}
+```
+
+### Corrected Code
+```java
+@Test
+public void testChoice() {
+    // Your existing code
+    StateMachine<StateMachineTest.States, StateMachineTest.Events, Context> stateMachine = builder.build("ChoiceConditionMachine" + java.util.UUID.randomUUID().toString());
+    // Your existing code
+}
+```

@@ -1,0 +1,9 @@
+@@ -152,6 +152,8 @@
+     final Status status = client.read(tableName, "Missing row", null, result);
+     assertEquals(Status.NOT_FOUND, status);
+     assertEquals(0, result.size());
++    
++    client.cleanup(); // clear potential shared states in the client
+   }
+ 
+   @Test

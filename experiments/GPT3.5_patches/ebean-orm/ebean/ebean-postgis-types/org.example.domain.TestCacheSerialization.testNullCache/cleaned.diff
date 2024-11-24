@@ -1,0 +1,9 @@
+@@ -77,6 +77,8 @@
+     assertEquals(pol, r2.getPolygon());  // and did fail https://github.com/ebean-orm/ebean/issues/3026
+     assertNull(r1.getPoint());
+ 
++    DB.delete(tb); // delete tb from the database
++
+   }
+ }
+

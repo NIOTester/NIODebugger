@@ -1,0 +1,11 @@
+Certainly! The test method `testUpdate` is non-idempotent due to the fact that the previous execution already performs the same action. Here's the modified version that makes the test idempotent:
+
+```java
+
+public void setUp() throws Exception {
+  client.cleanup();
+  setUp(new Properties());
+}
+```
+
+In this fix, the client is reset to ensure before test execution to ensure an update can be performed.

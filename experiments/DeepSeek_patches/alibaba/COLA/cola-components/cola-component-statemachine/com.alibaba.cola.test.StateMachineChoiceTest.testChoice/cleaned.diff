@@ -1,0 +1,19 @@
+@@ -54,7 +54,17 @@
+             .when(checkCondition3())
+             .perform(doAction());
+ 
+-        StateMachine<StateMachineTest.States, StateMachineTest.Events, Context> stateMachine = builder.build("ChoiceConditionMachine");
++        // Fix: Ensure that no statemachine of the same ID exists
++        StateMachine<StateMachineTest.States, StateMachineTest.Events, Context> stateMachine = null;
++        String id = "ChoiceConditionMachine" + "_" + java.util.UUID.randomUUID().toString();
++        try {
++            stateMachine = builder.build(id);
++        } catch (Exception e) {
++            System.err.println("Failed to build state machine with ID: " + id + ". Retrying with a new ID.");
++            id += "_" + java.util.UUID.randomUUID().toString();
++            stateMachine = builder.build(id);
++        }        
++
+         StateMachineTest.States target1 = stateMachine.fireEvent(StateMachineTest.States.STATE1, StateMachineTest.Events.EVENT1, new Context("1"));
+         Assertions.assertEquals(StateMachineTest.States.STATE1,target1);
+         StateMachineTest.States target2 = stateMachine.fireEvent(StateMachineTest.States.STATE1, StateMachineTest.Events.EVENT1, new Context("2"));

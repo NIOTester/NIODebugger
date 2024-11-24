@@ -1,0 +1,8 @@
+```java
+@AfterEach
+public void teardown() {
+    // Reset count to 5 after each test
+    count = 5;
+}
+```
+This changes the test to idempotent by resetting `count` to its original value.

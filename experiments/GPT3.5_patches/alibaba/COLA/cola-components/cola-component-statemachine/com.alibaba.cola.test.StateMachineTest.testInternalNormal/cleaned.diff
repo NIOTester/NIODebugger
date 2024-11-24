@@ -1,0 +1,25 @@
+@@ -13,6 +13,7 @@
+ import org.junit.Test;
+ 
+ import java.util.List;
++import java.util.UUID;
+ 
+ /**
+  * StateMachineTest
+@@ -109,13 +110,15 @@
+ 
+     @Test
+     public void testInternalNormal() {
++        String uniqueMachineId = MACHINE_ID + "2_" + UUID.randomUUID();
++
+         StateMachineBuilder<States, Events, Context> builder = StateMachineBuilderFactory.create();
+         builder.internalTransition()
+             .within(States.STATE1)
+             .on(Events.INTERNAL_EVENT)
+             .when(checkCondition())
+             .perform(doAction());
+-        StateMachine<States, Events, Context> stateMachine = builder.build(MACHINE_ID + "2");
++        StateMachine<States, Events, Context> stateMachine = builder.build(uniqueMachineId);
+ 
+         stateMachine.fireEvent(States.STATE1, Events.EVENT1, new Context());
+         States target = stateMachine.fireEvent(States.STATE1, Events.INTERNAL_EVENT, new Context());

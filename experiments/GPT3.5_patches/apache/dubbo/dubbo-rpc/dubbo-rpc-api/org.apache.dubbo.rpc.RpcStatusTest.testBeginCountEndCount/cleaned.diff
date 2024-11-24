@@ -1,0 +1,11 @@
+@@ -60,6 +60,10 @@
+         Assertions.assertTrue(flag);
+         flag = RpcStatus.beginCount(url, methodName, max);
+         Assertions.assertFalse(flag);
++
++        // remove status to reset the metrics
++        RpcStatus.removeStatus(url);
++        RpcStatus.removeStatus(url, methodName);
+     }
+ 
+     @Test

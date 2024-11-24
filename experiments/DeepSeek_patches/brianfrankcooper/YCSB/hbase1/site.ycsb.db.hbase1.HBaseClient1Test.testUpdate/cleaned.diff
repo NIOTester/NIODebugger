@@ -1,0 +1,33 @@
+@@ -118,8 +118,30 @@
+ 
+   @After
+   public void tearDown() throws Exception {
+-    table.close();
+-    testingUtil.deleteTable(tableName);
++    if (client != null) {
++      try {
++        client.cleanup();
++      } catch (Exception e) {
++        System.err.println("Error during client cleanup: " + e.getMessage());
++        e.printStackTrace();
++      }
++    }
++
++    if (table != null) {
++      try {
++        table.close();
++      } catch (Exception e) {
++        System.err.println("Error closing table: " + e.getMessage());
++        e.printStackTrace();
++      }
++    }
++
++    try {
++      testingUtil.deleteTable(tableName);
++    } catch (Exception e) {
++      System.err.println("Error deleting table: " + e.getMessage());
++      e.printStackTrace();
++    }
+   }
+ 
+   @Test

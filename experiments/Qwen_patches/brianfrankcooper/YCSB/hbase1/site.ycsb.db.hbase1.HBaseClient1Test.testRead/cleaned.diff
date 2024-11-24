@@ -1,0 +1,10 @@
+@@ -120,6 +120,9 @@
+   public void tearDown() throws Exception {
+     table.close();
+     testingUtil.deleteTable(tableName);
++
++    // Remove polluted states in client.
++    client.cleanup();
+   }
+ 
+   @Test

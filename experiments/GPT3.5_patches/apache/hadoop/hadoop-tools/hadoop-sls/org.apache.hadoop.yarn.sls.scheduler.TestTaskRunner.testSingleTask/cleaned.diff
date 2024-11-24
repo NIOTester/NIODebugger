@@ -1,0 +1,22 @@
+@@ -66,6 +66,11 @@
+     public void lastStep() {
+       Assert.fail();
+     }
++
++    public static void reset() {
++      first = false;
++      latch = new CountDownLatch(1);
++    }
+   }
+ 
+   @Test
+@@ -74,7 +79,8 @@
+     runner.schedule(new SingleTask(0));
+     SingleTask.latch.await(5000, TimeUnit.MILLISECONDS);
+     Assert.assertTrue(SingleTask.first);
+-  }
++    SingleTask.reset();
++  } 
+ 
+   public static class DualTask extends TaskRunner.Task {
+     public static CountDownLatch latch = new CountDownLatch(1);

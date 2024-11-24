@@ -1,0 +1,14 @@
+To make this method idempotent across tests, you need to ensure the test root directory always exists.
+
+Here’s how you can add a setup method to handle idempotence:
+```java
+@Before
+public void setup() throws Exception {
+    // Check if the test root directory exists, and create it if it doesn't
+    if (!TEST_ROOT_DIR.exists()) {
+        if (!TEST_ROOT_DIR.mkdirs()) {
+            throw new IOException("Failed to create test root directory: " + TEST_ROOT_DIR);
+        }
+    }
+}
+```

@@ -1,0 +1,10 @@
+@@ -364,7 +364,8 @@
+         assertEquals(1, ksessionUsed.size());
+         assertEquals(ksession1Id, ksessionUsed.iterator().next().longValue());
+         
+-        
++        manager.disposeRuntimeEngine(runtime);        
++
+         manager.close();
+     }
+     

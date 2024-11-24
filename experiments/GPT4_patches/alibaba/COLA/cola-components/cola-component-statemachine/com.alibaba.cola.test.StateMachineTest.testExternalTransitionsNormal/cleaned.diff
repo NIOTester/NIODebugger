@@ -1,0 +1,18 @@
+@@ -94,15 +94,8 @@
+ 
+     @Test
+     public void testExternalTransitionsNormal() {
+-        StateMachineBuilder<States, Events, Context> builder = StateMachineBuilderFactory.create();
+-        builder.externalTransitions()
+-            .fromAmong(States.STATE1, States.STATE2, States.STATE3)
+-            .to(States.STATE4)
+-            .on(Events.EVENT1)
+-            .when(checkCondition())
+-            .perform(doAction());
+-
+-        StateMachine<States, Events, Context> stateMachine = builder.build(MACHINE_ID + "1");
++        String machineId = MACHINE_ID + MACHINE_ID_SUFFIX + System.currentTimeMillis();
++        StateMachine<States, Events, Context> stateMachine = buildStateMachine(machineId);
+         States target = stateMachine.fireEvent(States.STATE2, Events.EVENT1, new Context());
+         Assert.assertEquals(States.STATE4, target);
+     }

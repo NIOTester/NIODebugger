@@ -1,0 +1,10 @@
+@@ -131,5 +131,9 @@
+             Assertions.assertEquals(rpcStatus.getFailedMaxElapsed(), 4000);
+             Assertions.assertEquals(rpcStatus.getFailedAverageElapsed(), 3500);
+         }
++        
++        // Remove status to reset metrics
++        RpcStatus.removeStatus(url);
++        RpcStatus.removeStatus(url, methodName);
+     }
+ }

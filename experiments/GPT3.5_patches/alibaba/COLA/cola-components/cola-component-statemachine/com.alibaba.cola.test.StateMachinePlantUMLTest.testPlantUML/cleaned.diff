@@ -1,0 +1,11 @@
+@@ -169,7 +169,9 @@
+                         .when(checkCondition())
+                         .perform(doAction()));
+ 
+-        StateMachine stateMachine = builder.build("AdjustPriceTask");
++        // Add a random number to the state machine name to ensure idempotency
++        String uniqueId = "AdjustPriceTask_" + new java.util.Random().nextInt(100000);
++        StateMachine stateMachine = builder.build(uniqueId);
+         String plantUML = stateMachine.generatePlantUML();
+         System.out.println(plantUML);
+ 

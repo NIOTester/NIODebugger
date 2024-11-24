@@ -1,0 +1,10 @@
+@@ -102,6 +102,9 @@
+         String methodName = "testStatistics";
+         int max = 0;
+ 
++        RpcStatus.removeStatus(url);
++        RpcStatus.removeStatus(url, methodName);
++
+         RpcStatus.beginCount(url, methodName, max);
+         RpcStatus.beginCount(url, methodName, max);
+         RpcStatus.beginCount(url, methodName, max);

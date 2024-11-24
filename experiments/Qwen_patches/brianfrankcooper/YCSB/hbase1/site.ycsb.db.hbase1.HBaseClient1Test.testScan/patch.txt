@@ -1,0 +1,47 @@
+```java
+
+public class HBaseClient1Test {
+
+  @Test
+  public void testScan() throws Exception {
+    // Fill with data
+    final String colStr = "row_number";
+    final byte[] col = Bytes.toBytes(colStr);
+    final int n = 10;
+    final List<Put> puts = new ArrayList<Put>(n);
+    for(int i = 0; i < n; i++) {
+      final byte[] key = Bytes.toBytes(String.format("%05d", i));
+      final byte[] value = java.nio.ByteBuffer.allocate(4).putInt(i).array();
+      final Put p = new Put(key);
+      p.addColumn(Bytes.toBytes(COLUMN_FAMILY), col, value);
+      puts.add(p);
+    }
+    table.put(puts);
+
+    // Test
+    final Vector<HashMap<String, ByteIterator>> result =
+        new Vector<HashMap<String, ByteIterator>>();
+
+    // Scan 5 records, skipping the first
+    client.scan(tableName, "00001", 5, null, result);
+
+    assertEquals(5, result.size());
+    for(int i = 0; i < 5; i++) {
+      final HashMap<String, ByteIterator> row = result.get(i);
+      assertEquals(1, row.size());
+      assertTrue(row.containsKey(colStr));
+      final byte[] bytes = row.get(colStr).toArray();
+      final ByteBuffer buf = ByteBuffer.wrap(bytes);
+      final int rowNum = buf.getInt();
+      assertEquals(i + 1, rowNum);
+    }
+
+    // clean up the client
+    client.cleanup();
+    client = null;
+  }
+}
+```
+Explanation of the Changes made:
+1. **Cleaning up Client**: After the scans are completed, the client is closed to remove resources.
+2. **Releasing the Client Object**: This step ensures that the `client` object is no longer referenced and can be garbage collected

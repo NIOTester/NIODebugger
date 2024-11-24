@@ -1,0 +1,18 @@
+@@ -13,6 +13,7 @@
+ import org.junit.Test;
+ 
+ import java.util.List;
++import java.util.UUID;
+ 
+ /**
+  * StateMachineTest
+@@ -71,7 +72,8 @@
+ 
+         builder.setFailCallback(new AlertFailCallback<>());
+ 
+-        StateMachine<States, Events, Context> stateMachine = builder.build(MACHINE_ID + "-testFail");
++        // Ensure a unique ID is associated to each state machine
++        StateMachine<States, Events, Context> stateMachine = builder.build(MACHINE_ID + "-testFail" + UUID.randomUUID().toString());
+         Assert.assertThrows(TransitionFailException.class,
+             () -> stateMachine.fireEvent(States.STATE2, Events.EVENT1, new Context()));
+     }

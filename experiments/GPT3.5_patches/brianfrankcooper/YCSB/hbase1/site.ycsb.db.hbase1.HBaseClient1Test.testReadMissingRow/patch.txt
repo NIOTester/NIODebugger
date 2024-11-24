@@ -1,0 +1,123 @@
+```java
+package site.ycsb.db.hbase1;
+
+import static site.ycsb.workloads.CoreWorkload.TABLENAME_PROPERTY;
+import static site.ycsb.workloads.CoreWorkload.TABLENAME_PROPERTY_DEFAULT;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
+
+import site.ycsb.ByteIterator;
+import site.ycsb.Status;
+import site.ycsb.StringByteIterator;
+import site.ycsb.measurements.Measurements;
+import site.ycsb.workloads.CoreWorkload;
+
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hbase.HBaseTestingUtility;
+import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.client.Get;
+import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.client.Result;
+import org.apache.hadoop.hbase.client.Table;
+import org.apache.hadoop.hbase.util.Bytes;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Ignore;
+import org.junit.Test;
+
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Properties;
+import java.util.Vector;
+
+/**
+ * Integration tests for the YCSB HBase 1 client, using an HBase minicluster.
+ */
+public class HBaseClient1Test {
+
+  private final static String COLUMN_FAMILY = "cf";
+
+  private static HBaseTestingUtility testingUtil;
+  private HBaseClient1 client;
+  private Table table = null;
+  private String tableName;
+
+  private static boolean isWindows() {
+    final String os = System.getProperty("os.name");
+    return os.startsWith("Windows");
+  }
+
+  /**
+   * Creates a mini-cluster for use in these tests.
+   *
+   * This is a heavy-weight operation, so invoked only once for the test class.
+   */
+  @BeforeClass
+  public static void setUpClass() throws Exception {
+    // Minicluster setup fails on Windows with an UnsatisfiedLinkError.
+    // Skip if windows.
+    assumeTrue(!isWindows());
+    testingUtil = HBaseTestingUtility.createLocalHTU();
+    testingUtil.startMiniCluster();
+  }
+
+  /**
+   * Tears down mini-cluster.
+   */
+  @AfterClass
+  public static void tearDownClass() throws Exception {
+    if (testingUtil != null) {
+      testingUtil.shutdownMiniCluster();
+    }
+  }
+
+  /**
+   * Sets up the mini-cluster for testing.
+   *
+   * We re-create the table for each test.
+   */
+  @Before
+  public void setUp() throws Exception {
+    client = new HBaseClient1();
+    client.setConfiguration(new Configuration(testingUtil.getConfiguration()));
+
+    Properties p = new Properties();
+    p.setProperty("columnfamily", COLUMN_FAMILY);
+
+    Measurements.setProperties(p);
+    final CoreWorkload workload = new CoreWorkload();
+    workload.init(p);
+
+    tableName = p.getProperty(TABLENAME_PROPERTY, TABLENAME_PROPERTY_DEFAULT);
+    table = testingUtil.createTable(TableName.valueOf(tableName), Bytes.toBytes(COLUMN_FAMILY));
+
+    client.setProperties(p);
+    client.init();
+  }
+
+  @After
+  public void tearDown() throws Exception {
+    table.close();
+    testingUtil.deleteTable(tableName);
+
+    // add the following lines to ensure a fresh state for each test
+    client.cleanup();
+    client = null;
+  }
+
+  @Test
+  public void testReadMissingRow() throws Exception {
+    final HashMap<String, ByteIterator> result = new HashMap<String, ByteIterator>();
+    final Status status = client.read(tableName, "Missing row", null, result);
+    assertEquals(Status.NOT_FOUND, status);
+    assertEquals(0, result.size());
+  }
+}
+```

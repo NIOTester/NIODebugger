@@ -1,0 +1,57 @@
+@@ -710,35 +710,41 @@
+ 
+     @Test
+     public void cancelSendOnDoorStateShouldCancelCommandAndIssueReset() throws Exception {
+-        this.mgc = new MockGrblCommunicator();
++        // Initializing the controller and setting it to active state
+         GrblController instance = initializeAndConnectController(VERSION_GRBL_1_1F);
+         instance.setStatusUpdatesEnabled(true);
++
++        // Sending initial Door status update and clearing sent bytes
+         instance.rawResponseHandler("<Door|MPos:0.000,0.000,0.000|FS:0,0|Pn:XYZ>");
+         mgc.sentBytes.clear();
+ 
+-        // Set internal state to cancelling
++        // Simulating the cancellation of send operation
+         instance.cancelSend();
+ 
+-        assertEquals(1, mgc.numCancelSendCalls);
+-        assertEquals(0, mgc.numPauseSendCalls);
+-        assertEquals(0, mgc.sentBytes.size());
++        // Verifying the cancelSend behavior
++        assertEquals("Cancel send should be triggered once", 1, mgc.numCancelSendCalls);
++        assertEquals("Pause should not be triggered", 0, mgc.numPauseSendCalls);
++        assertEquals("No bytes should be sent after cancel", 0, mgc.sentBytes.size());
+ 
+-        // First round we will store the last position
++        // Sending another Door status update
+         instance.rawResponseHandler("<Door|MPos:0.000,0.000,0.000|FS:0,0|Pn:XYZ>");
++        
++        // Verifying the cancel behavior remains consistent
++        assertEquals("Cancel send should remain triggered", 1, mgc.numCancelSendCalls);
++        assertEquals("Pause should not be triggered", 0, mgc.numPauseSendCalls);
++        assertEquals("No bytes should be sent", 0, mgc.sentBytes.size());
+ 
+-        assertEquals(1, mgc.numCancelSendCalls);
+-        assertEquals(0, mgc.numPauseSendCalls);
+-        assertEquals(0, mgc.sentBytes.size());
+-
+-        // Now we will do the actual cancel
++        // Sending another Door status update to trigger reset
+         instance.rawResponseHandler("<Door|MPos:0.000,0.000,0.000|FS:0,0|Pn:XYZ>");
+ 
+-        assertEquals(2, mgc.numCancelSendCalls);
+-        assertEquals(0, mgc.numPauseSendCalls);
+-        assertEquals(1, mgc.sentBytes.size());
+-        assertEquals(Byte.valueOf(GRBL_RESET_COMMAND), mgc.sentBytes.get(0));
++        // Verifying that cancelSend is called again and reset command is issued
++        assertEquals("Cancel send should be triggered again", 2, mgc.numCancelSendCalls);
++        assertEquals("Pause should not be triggered", 0, mgc.numPauseSendCalls);
++        assertEquals("Reset command should be sent", 1, mgc.sentBytes.size());
++        assertEquals("Sent byte should be reset command", Byte.valueOf(GRBL_RESET_COMMAND), mgc.sentBytes.get(0));
+     }
+ 
++
+     private void sendStuff(GrblController instance) throws Exception {
+         List<GcodeCommand> commands = new ArrayList<>();
+         for (int i = 0; i < 30; i++) {

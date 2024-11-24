@@ -1,0 +1,128 @@
+```java
+package org.jbpm.runtime.manager.impl;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Properties;
+import java.util.Set;
+
+import javax.persistence.EntityManagerFactory;
+
+import org.jbpm.runtime.manager.impl.jpa.EntityManagerFactoryManager;
+import org.jbpm.runtime.manager.util.TestUtil;
+import org.jbpm.services.task.identity.JBossUserGroupCallbackImpl;
+import org.jbpm.test.listener.process.NodeLeftCountDownProcessEventListener;
+import org.jbpm.test.util.AbstractBaseTest;
+import org.kie.test.util.db.PoolingDataSourceWrapper;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.kie.api.event.process.DefaultProcessEventListener;
+import org.kie.api.event.process.ProcessEventListener;
+import org.kie.api.event.process.ProcessNodeLeftEvent;
+import org.kie.api.event.process.ProcessStartedEvent;
+import org.kie.api.io.ResourceType;
+import org.kie.api.runtime.KieSession;
+import org.kie.api.runtime.manager.RuntimeEngine;
+import org.kie.api.runtime.manager.RuntimeEnvironment;
+import org.kie.api.runtime.manager.RuntimeEnvironmentBuilder;
+import org.kie.api.runtime.manager.RuntimeManager;
+import org.kie.api.runtime.manager.RuntimeManagerFactory;
+import org.kie.api.runtime.manager.audit.AuditService;
+import org.kie.api.runtime.manager.audit.ProcessInstanceLog;
+import org.kie.api.runtime.process.ProcessInstance;
+import org.kie.api.task.UserGroupCallback;
+import org.kie.internal.io.ResourceFactory;
+import org.kie.internal.runtime.manager.InternalRuntimeManager;
+import org.kie.internal.runtime.manager.context.CaseContext;
+import org.kie.internal.runtime.manager.context.ProcessInstanceIdContext;
+
+public class PerCaseRuntimeManagerTest extends AbstractBaseTest {
+    private PoolingDataSourceWrapper pds;
+    private UserGroupCallback userGroupCallback;
+    private RuntimeManager manager; 
+    private EntityManagerFactory emf;
+    @Before
+    public void setup() {
+        Properties properties= new Properties();
+        properties.setProperty("mary", "HR");
+        properties.setProperty("john", "HR");
+        userGroupCallback = new JBossUserGroupCallbackImpl(properties);
+
+        pds = TestUtil.setupPoolingDataSource();
+        
+        emf = EntityManagerFactoryManager.get().getOrCreate("org.jbpm.persistence.jpa");
+    }
+    
+    @After
+    public void teardown() {
+        manager.close();
+        EntityManagerFactoryManager.get().clear();
+        pds.close();
+    }
+    
+    @Test
+    public void testMultipleProcessesInSingleCaseCompletedInSequence() {
+        final Set<Long> ksessionUsed = new HashSet<Long>();
+        RuntimeEnvironment environment = RuntimeEnvironmentBuilder.Factory.get()
+                .newDefaultBuilder()
+                .userGroupCallback(userGroupCallback)
+                .entityManagerFactory(emf)
+                .addAsset(ResourceFactory.newClassPathResource("BPMN2-ScriptTask.bpmn2"), ResourceType.BPMN2)
+                .registerableItemsFactory(new DefaultRegisterableItemsFactory(){
+
+                    @Override
+                    public List<ProcessEventListener> getProcessEventListeners(RuntimeEngine runtime) {
+                        List<ProcessEventListener> listeners = super.getProcessEventListeners(runtime);
+                        listeners.add(new DefaultProcessEventListener(){
+
+                            @Override
+                            public void beforeProcessStarted(ProcessStartedEvent event) {
+                                ksessionUsed.add(((KieSession)event.getKieRuntime()).getIdentifier());
+                            }
+                             
+                             
+                         });
+                        
+                        return listeners;
+                    }                   
+                })
+                .get();
+        
+        manager = RuntimeManagerFactory.Factory.get().newPerCaseRuntimeManager(environment);
+        assertNotNull(manager);
+       
+        // ksession for process instance #1
+        // since there is no process instance yet we need to get new session
+        RuntimeEngine runtime = manager.getRuntimeEngine(CaseContext.get("Case-1"));
+        KieSession ksession = runtime.getKieSession();
+
+        assertNotNull(ksession);       
+        long ksession1Id = ksession.getIdentifier();
+        assertTrue(ksession1Id > 0);
+        
+        
+        ProcessInstance pi1 = ksession.startProcess("ScriptTask");
+        assertEquals(ProcessInstance.STATE_COMPLETED, pi1.getState());
+        manager.disposeRuntimeEngine(runtime);
+        
+        runtime = manager.getRuntimeEngine(CaseContext.get("Case-1"));
+        ksession = runtime.getKieSession();
+        ProcessInstance pi2 = ksession.startProcess("ScriptTask");
+        assertEquals(ProcessInstance.STATE_COMPLETED, pi2.getState());
+        
+        // there should be only one ksession used
+        assertEquals(1, ksessionUsed.size());
+        assertEquals(ksession1Id, ksessionUsed.iterator().next().longValue());
+        
+        
+        manager.disposeRuntimeEngine(runtime); // add this line to fix state pollution
+        manager.close();
+    }
+}
+```

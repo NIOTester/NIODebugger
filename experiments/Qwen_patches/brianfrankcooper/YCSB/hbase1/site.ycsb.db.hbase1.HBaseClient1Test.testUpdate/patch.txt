@@ -1,0 +1,13 @@
+```java
+@After
+public void tearDown() throws Exception {
+  table.close();
+  testingUtil.deleteTable(tableName);
+
+  // Reset possible shared states and nullify client
+  client.cleanup();
+  if (client != null) {
+    client = null;
+  }
+}
+```

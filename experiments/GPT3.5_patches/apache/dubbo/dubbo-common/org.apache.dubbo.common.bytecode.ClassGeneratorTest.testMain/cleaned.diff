@@ -1,0 +1,9 @@
+@@ -184,7 +184,7 @@
+         fname.setAccessible(true);
+ 
+         ClassGenerator cg = ClassGenerator.newInstance();
+-        cg.setClassName(Bean.class.getName() + "$Builder");
++        cg.setClassName(Bean.class.getName() + "$Builder" + System.currentTimeMillis());  // Added timestamp to ensure uniqueness
+         cg.addInterface(Builder.class);
+ 
+         cg.addField("public static java.lang.reflect.Field FNAME;");

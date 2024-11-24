@@ -1,0 +1,24 @@
+@@ -194,6 +194,13 @@
+       last = true;
+       latch.countDown();
+     }
++
++    public static void reset() {
++      first = false;
++      middle = 0;
++      last = false;
++      latch = new CountDownLatch(1);
++    }
+   }
+ 
+   @Test
+@@ -204,7 +211,8 @@
+     Assert.assertTrue(MultiTask.first);
+     Assert.assertEquals((20 - 0) / 5 - 2 + 1, MultiTask.middle);
+     Assert.assertTrue(MultiTask.last);
+-  }
++    MultiTask.reset();
++  } 
+ 
+ 
+   public static class PreStartTask extends TaskRunner.Task {

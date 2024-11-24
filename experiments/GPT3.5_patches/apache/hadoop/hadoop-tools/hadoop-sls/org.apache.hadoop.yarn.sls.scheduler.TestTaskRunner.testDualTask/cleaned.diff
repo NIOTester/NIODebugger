@@ -1,0 +1,23 @@
+@@ -106,6 +106,12 @@
+       last = true;
+       latch.countDown();
+     }
++
++    public static void reset() {
++      first = false;
++      last = false;
++      latch = new CountDownLatch(1);
++    }
+   }
+ 
+   @Test
+@@ -115,7 +121,8 @@
+     DualTask.latch.await(5000, TimeUnit.MILLISECONDS);
+     Assert.assertTrue(DualTask.first);
+     Assert.assertTrue(DualTask.last);
+-  }
++    DualTask.reset();
++  } 
+ 
+   public static class TriTask extends TaskRunner.Task {
+     public static CountDownLatch latch = new CountDownLatch(1);

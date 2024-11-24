@@ -1,0 +1,19 @@
+@@ -82,6 +82,7 @@
+         } catch (Exception ex) {
+             ex.printStackTrace();
+         }
++        CounterCommand.resetCounter();
+     }
+ 
+     public static class CounterCommand implements Command {
+@@ -98,6 +99,10 @@
+             return counter;
+         }
+ 
++        public static void resetCounter() {
++            counter = 0;
++        }
++
+     }
+ 
+ }

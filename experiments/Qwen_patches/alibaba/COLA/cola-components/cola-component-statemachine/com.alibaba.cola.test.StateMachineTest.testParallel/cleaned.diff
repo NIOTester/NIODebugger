@@ -1,0 +1,10 @@
+@@ -227,7 +227,8 @@
+                 .on(StateMachineTest.Events.EVENT2)
+                 .when(checkCondition())
+                 .perform(doAction());
+-        StateMachine<States, Events, Context> stateMachine = builder.build("ParallelMachine");
++        // Use a random string to build a state machine
++        StateMachine<States, Events, Context> stateMachine = builder.build(java.util.UUID.randomUUID().toString());
+         System.out.println(stateMachine.generatePlantUML());
+         List<States> states = stateMachine.fireParallelEvent(StateMachineTest.States.STATE1, StateMachineTest.Events.EVENT1, new Context());
+         for (StateMachineTest.States state : states) {

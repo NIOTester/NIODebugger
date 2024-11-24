@@ -1,0 +1,10 @@
+@@ -54,7 +54,8 @@
+             .when(checkCondition())
+             .perform(doAction());
+ 
+-        StateMachine<States, Events, Context> stateMachine = builder.build(MACHINE_ID);
++        String randomNumber = Double.toString(Math.random());
++        StateMachine<States, Events, Context> stateMachine = builder.build(MACHINE_ID + randomNumber);
+         States target = stateMachine.fireEvent(States.STATE1, Events.EVENT1, new Context());
+         Assert.assertEquals(States.STATE2, target);
+     }

@@ -1,0 +1,106 @@
+```java
+package org.apache.hadoop.mapreduce.v2.app.webapp;
+
+import static org.mockito.Mockito.*;
+
+import java.io.IOException;
+import java.util.Iterator;
+
+import org.apache.commons.lang3.StringUtils;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.mapreduce.JobACL;
+import org.apache.hadoop.mapreduce.v2.api.records.JobId;
+import org.apache.hadoop.mapreduce.v2.api.records.TaskId;
+import org.apache.hadoop.mapreduce.v2.app.AppContext;
+import org.apache.hadoop.mapreduce.v2.app.job.Job;
+import org.apache.hadoop.mapreduce.v2.app.job.Task;
+import org.apache.hadoop.mapreduce.v2.util.MRApps;
+import org.apache.hadoop.security.UserGroupInformation;
+import org.apache.hadoop.yarn.api.records.ApplicationId;
+import org.apache.hadoop.yarn.webapp.Controller.RequestContext;
+import org.apache.hadoop.yarn.webapp.MimeType;
+import org.apache.hadoop.yarn.webapp.ResponseInfo;
+import org.junit.Before;
+import org.junit.Test;
+import static org.junit.Assert.*;
+
+public class TestAppController {
+
+  private AppControllerForTest appController;
+  private RequestContext ctx;
+  private Job job;
+  private static final String taskId = "task_01_01_m_01";
+
+  @Before
+  public void setUp() throws IOException {
+    AppContext context = mock(AppContext.class);
+    when(context.getApplicationID()).thenReturn(
+        ApplicationId.newInstance(0, 0));
+    when(context.getApplicationName()).thenReturn("AppName");
+    when(context.getUser()).thenReturn("User");
+    when(context.getStartTime()).thenReturn(System.currentTimeMillis());
+    job = mock(Job.class);
+    Task task = mock(Task.class);
+
+    when(job.getTask(any(TaskId.class))).thenReturn(task);
+    when(job.loadConfFile()).thenReturn(new Configuration());
+    when(job.getConfFile()).thenReturn(new Path("/"));
+
+    JobId jobID = MRApps.toJobID("job_01_01");
+    when(context.getJob(jobID)).thenReturn(job);
+    when(job.checkAccess(any(UserGroupInformation.class), any(JobACL.class)))
+        .thenReturn(true);
+
+    App app = new App(context);
+    Configuration configuration = new Configuration();
+    ctx = mock(RequestContext.class);
+
+    appController = new AppControllerForTest(app, configuration, ctx);
+    appController.getProperty().put(AMParams.JOB_ID, "job_01_01");
+    appController.getProperty().put(AMParams.TASK_ID, taskId);
+
+  }
+
+  @Test
+  public void testAttempts() {
+
+    appController.getProperty().remove(AMParams.TASK_TYPE);
+
+    when(job.checkAccess(any(UserGroupInformation.class), any(JobACL.class)))
+        .thenReturn(false);
+
+    appController.attempts();
+    verify(appController.response()).setContentType(MimeType.TEXT);
+    assertEquals(
+        "Access denied: User user does not have permission to view job job_01_01",
+        appController.getData());
+
+    when(job.checkAccess(any(UserGroupInformation.class), any(JobACL.class)))
+        .thenReturn(true);
+
+    appController.getProperty().remove(AMParams.TASK_ID);
+    appController.attempts();
+    assertEquals(
+        "Access denied: User user does not have permission to view job job_01_01",
+        appController.getData());
+
+    appController.getProperty().put(AMParams.TASK_ID, taskId);
+    appController.attempts();
+    assertEquals("Bad request: missing task-type.", appController.getProperty()
+        .get("title"));
+    appController.getProperty().put(AMParams.TASK_TYPE, "m");
+
+    appController.attempts();
+    assertEquals("Bad request: missing attempt-state.", appController
+        .getProperty().get("title"));
+    appController.getProperty().put(AMParams.ATTEMPT_STATE, "State");
+
+    appController.attempts();
+
+    assertEquals(AttemptsPage.class, appController.getClazz());
+
+    appController.getProperty().remove(AMParams.ATTEMPT_STATE);
+  }
+}
+```

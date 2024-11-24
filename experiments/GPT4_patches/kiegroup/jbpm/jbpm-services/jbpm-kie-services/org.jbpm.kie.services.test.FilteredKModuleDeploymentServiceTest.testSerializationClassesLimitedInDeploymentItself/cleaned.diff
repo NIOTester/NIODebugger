@@ -1,0 +1,16 @@
+@@ -357,7 +357,6 @@
+        limitDeploymentUnit.setDeploymentDescriptor(depDesc);
+ 
+        deploymentService.deploy(limitDeploymentUnit);
+-       units.add(limitDeploymentUnit);
+        verifyDeployedUnitContainsCorrectClasses(limitDeploymentUnit);
+ 
+        depDesc = new DeploymentDescriptorImpl().getBuilder()
+@@ -366,7 +365,6 @@
+        allDeploymentUnit.setDeploymentDescriptor(depDesc);
+ 
+        deploymentService.deploy(allDeploymentUnit);
+-       units.add(limitDeploymentUnit);
+        verifyDeployedUnitContainsCorrectClasses(allDeploymentUnit);
+     }
+ 

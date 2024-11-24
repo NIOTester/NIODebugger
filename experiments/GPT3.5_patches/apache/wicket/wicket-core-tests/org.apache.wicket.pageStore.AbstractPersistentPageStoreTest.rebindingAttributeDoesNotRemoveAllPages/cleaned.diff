@@ -1,0 +1,9 @@
+@@ -88,6 +88,8 @@
+ 			}
+ 		};
+ 		assertTrue(store.canBeAsynchronous(context));
++
++		store.destroy(); // add this line to clean shared states
+ 		
+ 	}
+ 

@@ -1,0 +1,13 @@
+@@ -121,7 +121,11 @@
+   @After
+   public void tearDown() throws Exception {
+     table.close();
+-    testingUtil.deleteTable(tableName); 
++    testingUtil.deleteTable(tableName);
++
++    // add the following lines to reset client
++    client.cleanup();
++    client = null; 
+   }
+ 
+   @Test

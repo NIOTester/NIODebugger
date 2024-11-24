@@ -1,0 +1,19 @@
+@@ -77,7 +77,7 @@
+   }
+ 
+   public static class DualTask extends TaskRunner.Task {
+-    public static CountDownLatch latch = new CountDownLatch(1);
++    public static CountDownLatch latch;
+     public static boolean first;
+     public static boolean last;
+ 
+@@ -110,6 +110,9 @@
+ 
+   @Test
+   public void testDualTask() throws Exception {
++    DualTask.first = false;
++    DualTask.last = false;
++    DualTask.latch = new CountDownLatch(1);
+     runner.start();
+     runner.schedule(new DualTask(0, 10, 10));
+     DualTask.latch.await(5000, TimeUnit.MILLISECONDS);

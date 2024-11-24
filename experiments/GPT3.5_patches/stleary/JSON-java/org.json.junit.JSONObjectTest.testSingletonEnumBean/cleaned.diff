@@ -1,0 +1,11 @@
+@@ -3337,6 +3337,10 @@
+         Util.checkJSONObjectsMaps(new ArrayList<JSONObject>(Arrays.asList(
+                 jo, jo2
+         )));
++
++        // Reset the singleton values
++        SingletonEnum.getInstance().setSomeInt(0);
++        SingletonEnum.getInstance().setSomeString(null);
+     }
+     
+     /**

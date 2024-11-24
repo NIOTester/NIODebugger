@@ -1,0 +1,9 @@
+@@ -271,6 +271,8 @@
+     reporter.resetDoneFlag();
+     t.join();
+     assertThat(statusUpdateTimes).isEqualTo(2);
++
++    statusUpdateTimes = 0; // reset status update times to 0 to avoid polluted states
+   }
+ 
+   @Test(timeout=10000)

@@ -1,0 +1,9 @@
+@@ -124,6 +124,8 @@
+   public void tearDown() throws Exception {
+     table.close();
+     testingUtil.deleteTable(TableName.valueOf(tableName));
++    // Add this line to make `testUpdate()` idempotent
++    client.cleanup();
+   }
+ 
+   @Test

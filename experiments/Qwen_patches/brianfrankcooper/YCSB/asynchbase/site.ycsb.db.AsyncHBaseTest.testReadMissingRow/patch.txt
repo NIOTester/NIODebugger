@@ -1,0 +1,24 @@
+You can refactor the existing implementation by adding the logic to clean up possible state pollution after the test:
+
+```java
+@After
+public void tearDown() throws Exception {
+    if (client != null) {
+        client.cleanup();
+    }
+    if (table != null) {
+        table.close();
+        testingUtil.deleteTable(tableName);
+    }
+}
+```
+
+Here's how this changes the `AsyncHBaseTest` class:
+
+1. We call `cleanup` to reset possible shared states in `client`.
+
+2. We close the `table` to avoid dirty states.
+
+3. The `deleteTable()` helper method prevents possible table name conflicts.
+
+This refactored implementation ensures an idempotent test.

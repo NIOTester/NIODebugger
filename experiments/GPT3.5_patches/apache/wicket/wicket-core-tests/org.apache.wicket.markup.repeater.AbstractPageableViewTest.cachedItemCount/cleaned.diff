@@ -1,0 +1,9 @@
+@@ -65,6 +65,8 @@
+ 		count = 8;
+ 		
+ 		assertEquals(8, view.getItemCount(), "cached cleared when detached");
++
++		count = 5; // reset count to 5
+ 	}	
+ 
+ 	static class View extends AbstractPageableView<Integer>

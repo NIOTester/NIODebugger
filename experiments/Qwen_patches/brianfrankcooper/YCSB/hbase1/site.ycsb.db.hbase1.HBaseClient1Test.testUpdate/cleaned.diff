@@ -1,0 +1,13 @@
+@@ -120,6 +120,12 @@
+   public void tearDown() throws Exception {
+     table.close();
+     testingUtil.deleteTable(tableName);
++    
++    // Reset possible shared states and nullify client
++    client.cleanup();
++    if (client != null) {
++       client = null;
++    }
+   }
+ 
+   @Test

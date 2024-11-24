@@ -1,0 +1,20 @@
+@@ -118,7 +118,7 @@
+   }
+ 
+   public static class TriTask extends TaskRunner.Task {
+-    public static CountDownLatch latch = new CountDownLatch(1);
++    public static CountDownLatch latch;
+     public static boolean first;
+     public static boolean middle;
+     public static boolean last;
+@@ -155,6 +155,10 @@
+ 
+   @Test
+   public void testTriTask() throws Exception {
++    TriTask.first = false;
++    TriTask.middle = false;
++    TriTask.last = false;
++    TriTask.latch = new CountDownLatch(1);
+     runner.start();
+     runner.schedule(new TriTask(0, 10, 5));
+     TriTask.latch.await(5000, TimeUnit.MILLISECONDS);

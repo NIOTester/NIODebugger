@@ -1,0 +1,94 @@
+```java
+package org.apache.cxf.systest.soap12;
+
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.xml.namespace.QName;
+import javax.xml.xpath.XPathConstants;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
+
+import org.apache.cxf.binding.soap.Soap11;
+import org.apache.cxf.helpers.IOUtils;
+import org.apache.cxf.helpers.XPathUtils;
+import org.apache.cxf.staxutils.StaxUtils;
+import org.apache.cxf.testutil.common.AbstractBusClientServerTestBase;
+import org.apache.hello_world_soap12_http.Greeter;
+import org.apache.hello_world_soap12_http.PingMeFault;
+import org.apache.hello_world_soap12_http.SOAPService;
+import org.apache.hello_world_soap12_http.types.FaultDetail;
+
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+public class Soap12ClientServerTest extends AbstractBusClientServerTestBase {
+    public static final String PORT = Server.PORT;
+
+    private final QName serviceName = new QName("http://apache.org/hello_world_soap12_http",
+                                                "SOAPService");
+    private final QName portName = new QName("http://apache.org/hello_world_soap12_http", "SoapPort");
+
+    private Greeter greeter; // Cached instance to ensure idempotency
+    private final Object lock = new Object(); // For thread safety
+
+    @BeforeClass
+    public static void startServers() throws Exception {
+        assertTrue("server did not launch correctly", launchServer(Server.class, true));
+    }
+
+    @Test
+    public void testPingMeFault() throws Exception {
+        greeter = getGreeter();
+        try {
+            greeter.pingMe();
+            fail("Should throw Exception!");
+        } catch (PingMeFault ex) {
+            FaultDetail detail = ex.getFaultInfo();
+            assertEquals((short)2, detail.getMajor());
+            assertEquals((short)1, detail.getMinor());
+            assertEquals("PingMeFault raised by server", ex.getMessage());
+        }
+    }
+    
+    String stripSpaces(String s) {
+        String s2 = s.replace(" ", "");
+        while (!s2.equals(s)) {
+            s = s2;
+            s2 = s.replace(" ", "");
+        }
+        return s2;
+    }
+
+    private Greeter getGreeter() throws NumberFormatException, MalformedURLException {
+        if (greeter == null) { // Check if already created
+            synchronized (lock) { // Ensure thread-safe initialization
+                if (greeter == null) {
+                    URL wsdl = getClass().getResource("/wsdl/hello_world_soap12.wsdl");
+                    assertNotNull("WSDL is null", wsdl);
+
+                    SOAPService service = new SOAPService(wsdl, serviceName);
+                    assertNotNull("Service is null", service);
+
+                    Greeter g = service.getPort(portName, Greeter.class);
+                    updateAddressPort(g, PORT); // Ensure local changes only
+                    greeter = g; // Cache the instance
+                }
+            }
+        }
+        return greeter; // Return cached instance
+    }
+
+}
+```

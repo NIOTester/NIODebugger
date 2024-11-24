@@ -1,0 +1,12 @@
+```java
+@Test
+public void testReadMissingRow() throws Exception {
+  final HashMap<String, ByteIterator> result = new HashMap<String, ByteIterator>();
+  final Status status = client.read(tableName, "Missing row", null, result);
+  assertEquals(Status.NOT_FOUND, status);
+  assertEquals(0, result.size());
+
+  // Clean up client after your test logic
+  client.cleanup();
+}
+```

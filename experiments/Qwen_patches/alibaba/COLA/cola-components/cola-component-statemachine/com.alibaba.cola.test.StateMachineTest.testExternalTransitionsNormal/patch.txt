@@ -1,0 +1,21 @@
+To ensure that the test runs idempotently, especially for avoiding duplicated machine IDs, we need to modify the logic to construct a new `machineId`.
+
+```java
+public class StateMachineTest {
+    @Test
+    public void testExternalTransitionsNormal() {
+        StateMachineBuilder<States, Events, Context> builder = StateMachineBuilderFactory.create();
+        builder.externalTransitions()
+                .fromAmong(States.STATE1, States.STATE2, States.STATE3)
+                .to(States.STATE4)
+                .on(Events.EVENT1)
+                .when(checkCondition())
+                .perform(doAction());
+        StateMachine<States, Events, Context> stateMachine = buildStateMachine("machine" + (java.lang.Math.random() * 10).longValue());
+        States target = stateMachine.fireEvent(States.STATE2, Events.EVENT1, new Context());
+        Assert.assertEquals(States.STATE4, target);
+    }
+}
+```
+
+We use `java.lang.Math.random` to generate a random number, which makes the `machineId` unique.

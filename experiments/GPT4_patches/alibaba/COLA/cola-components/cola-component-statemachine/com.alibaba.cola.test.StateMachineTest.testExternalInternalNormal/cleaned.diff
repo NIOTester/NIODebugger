@@ -1,0 +1,11 @@
+@@ -123,8 +123,8 @@
+     }
+
+     @Test
+     public void testExternalInternalNormal() {
+-        StateMachine<States, Events, Context> stateMachine = buildStateMachine("testExternalInternalNormal");
++        StateMachine<States, Events, Context> stateMachine = buildStateMachine("testExternalInternalNormal" + System.nanoTime());
+
+         Context context = new Context();
+         States target = stateMachine.fireEvent(States.STATE1, Events.EVENT1, context);
+         Assert.assertEquals(States.STATE2, target);

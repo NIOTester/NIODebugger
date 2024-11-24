@@ -1,0 +1,24 @@
+@@ -151,6 +151,13 @@
+       last = true;
+       latch.countDown();
+     }
++
++    public static void reset() {
++      first = false;
++      middle = false;
++      last = false;
++      latch = new CountDownLatch(1);
++    }
+   }
+ 
+   @Test
+@@ -161,7 +168,8 @@
+     Assert.assertTrue(TriTask.first);
+     Assert.assertTrue(TriTask.middle);
+     Assert.assertTrue(TriTask.last);
+-  }
++    TriTask.reset();
++  } 
+ 
+   public static class MultiTask extends TaskRunner.Task {
+     public static CountDownLatch latch = new CountDownLatch(1);

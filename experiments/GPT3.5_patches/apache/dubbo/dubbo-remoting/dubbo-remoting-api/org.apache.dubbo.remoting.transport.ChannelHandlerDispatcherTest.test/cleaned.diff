@@ -1,0 +1,25 @@
+@@ -57,6 +57,8 @@
+ 
+         channelHandlerDispatcher = channelHandlerDispatcher.removeChannelHandler(channelHandler1);
+         Assertions.assertFalse(channelHandlerDispatcher.getChannelHandlers().contains(channelHandler1));
++
++        MockChannelHandler.resetAllCounts(); // reset all counts to 0
+     }
+ 
+     @Test
+@@ -138,6 +140,14 @@
+ 
+     public static int getCaughtCount() {
+         return caughtCount;
+-    }    
++    }   
++
++    public static void resetAllCounts() {
++        sentCount = 0;
++        connectedCount = 0;
++        disconnectedCount = 0;
++        receivedCount = 0;
++        caughtCount = 0;
++    } 
+ }
+ 

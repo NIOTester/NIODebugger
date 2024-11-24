@@ -1,0 +1,22 @@
+@@ -231,6 +231,11 @@
+     @Override
+     public void lastStep() {
+     }
++
++    public static void reset() {
++      first = false;
++      latch = new CountDownLatch(1);
++    }
+   }
+ 
+   @Test
+@@ -243,7 +248,8 @@
+     long runAt = System.currentTimeMillis();
+     Assert.assertTrue(PreStartTask.first);
+     Assert.assertTrue(runAt - startedAt >= 200);
+-  }
++    PreStartTask.reset();
++  } 
+ 
+ }
+ 

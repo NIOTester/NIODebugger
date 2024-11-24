@@ -1,0 +1,37 @@
+@@ -33,6 +33,7 @@
+ import org.jbpm.test.JbpmTestCase;
+ import org.jbpm.test.entity.Application;
+ import org.jbpm.test.entity.Person;
++import org.junit.After;
+ import org.junit.Test;
+ import org.kie.api.marshalling.ObjectMarshallingStrategy;
+ import org.kie.api.runtime.EnvironmentName;
+@@ -59,6 +60,16 @@
+         super(true, true);
+     }
+ 
++	@After
++	public void tearDown() {
++		EntityManager em = emfDomain.createEntityManager();
++		em.getTransaction().begin();
++		em.createQuery("DELETE FROM Application WHERE person IS NOT NULL").executeUpdate();
++		em.createQuery("DELETE FROM Person").executeUpdate();
++		em.getTransaction().commit();
++		em.close();
++	}
++
+ 	@Test
+ 	public void testProcess() throws Exception {
+ 
+@@ -119,7 +130,10 @@
+ 		EntityManager em = emfDomain.createEntityManager();
+ 		int size = em.createQuery("select i from Person i").getResultList().size();
+ 		assertEquals(1, size);
+-	
++
++		// close manager which will close session maintained by the manager
++		manager.close();
++		
+ 	}
+ 
+ }

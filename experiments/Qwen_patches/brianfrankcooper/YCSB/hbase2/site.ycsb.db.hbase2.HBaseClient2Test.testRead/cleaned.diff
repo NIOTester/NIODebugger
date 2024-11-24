@@ -1,0 +1,10 @@
+@@ -143,6 +143,9 @@
+     assertEquals(2, result.size());
+     assertEquals("value1", result.get("column1").toString());
+     assertEquals("value2", result.get("column2").toString());
++
++    client.cleanup(); // Clean up potential polluted states
++    client = null; // Reset the client object
+   }
+ 
+   @Test

@@ -1,0 +1,18 @@
+@@ -78,6 +78,8 @@
+ 
+     @Test
+     public void testVerify() {
++        String uniqueMachineId = MACHINE_ID + "-testVerify_" + UUID.randomUUID();
++
+         StateMachineBuilder<States, Events, Context> builder = StateMachineBuilderFactory.create();
+         builder.externalTransition()
+             .from(States.STATE1)
+@@ -86,7 +88,7 @@
+             .when(checkCondition())
+             .perform(doAction());
+ 
+-        StateMachine<States, Events, Context> stateMachine = builder.build(MACHINE_ID + "-testVerify");
++        StateMachine<States, Events, Context> stateMachine = builder.build(uniqueMachineId);
+ 
+         Assert.assertTrue(stateMachine.verify(States.STATE1, Events.EVENT1));
+         Assert.assertFalse(stateMachine.verify(States.STATE1, Events.EVENT2));

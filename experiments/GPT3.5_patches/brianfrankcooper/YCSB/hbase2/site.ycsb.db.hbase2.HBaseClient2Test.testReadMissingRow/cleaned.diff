@@ -1,0 +1,9 @@
+@@ -124,6 +124,8 @@
+   public void tearDown() throws Exception {
+     table.close();
+     testingUtil.deleteTable(TableName.valueOf(tableName));
++    client.cleanup(); // clean up the client
++    client = null; // set the client to null to avoid shared states between tests
+   }
+ 
+   @Test

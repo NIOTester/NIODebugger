@@ -1,0 +1,135 @@
+```java
+import com.willwinder.universalgcodesender.AbstractController.UnexpectedCommand;
+import static com.willwinder.universalgcodesender.GrblUtils.GRBL_PAUSE_COMMAND;
+import static com.willwinder.universalgcodesender.GrblUtils.GRBL_RESET_COMMAND;
+import static com.willwinder.universalgcodesender.GrblUtils.GRBL_RESUME_COMMAND;
+import com.willwinder.universalgcodesender.firmware.grbl.GrblVersion;
+import com.willwinder.universalgcodesender.gcode.DefaultCommandCreator;
+import com.willwinder.universalgcodesender.gcode.util.Code;
+import com.willwinder.universalgcodesender.i18n.Localization;
+import com.willwinder.universalgcodesender.listeners.ControllerListener;
+import com.willwinder.universalgcodesender.listeners.ControllerState;
+import com.willwinder.universalgcodesender.listeners.MessageType;
+import com.willwinder.universalgcodesender.mockobjects.MockGrblCommunicator;
+import static com.willwinder.universalgcodesender.model.CommunicatorState.COMM_CHECK;
+import static com.willwinder.universalgcodesender.model.CommunicatorState.COMM_IDLE;
+import static com.willwinder.universalgcodesender.model.CommunicatorState.COMM_SENDING;
+import com.willwinder.universalgcodesender.model.PartialPosition;
+import com.willwinder.universalgcodesender.model.UnitUtils;
+import com.willwinder.universalgcodesender.services.MessageService;
+import com.willwinder.universalgcodesender.types.GcodeCommand;
+import com.willwinder.universalgcodesender.utils.GUIHelpers;
+import com.willwinder.universalgcodesender.utils.GcodeStreamReader;
+import com.willwinder.universalgcodesender.utils.GcodeStreamTest;
+import com.willwinder.universalgcodesender.utils.GcodeStreamWriter;
+import com.willwinder.universalgcodesender.utils.IGcodeStreamReader;
+import com.willwinder.universalgcodesender.utils.Settings;
+import com.willwinder.universalgcodesender.utils.SimpleGcodeStreamReader;
+import org.apache.commons.io.FileUtils;
+import org.junit.After;
+import org.junit.AfterClass;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
+
+import java.io.File;
+import java.io.IOException;
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+
+/**
+ * Test class for GrblController functionality
+ */
+public class GrblControllerTest {
+
+    public static final String VERSION_GRBL_1_1F = "1.1f";
+    private MockGrblCommunicator mgc;
+    private static File tempDir;
+
+    private final Settings settings = new Settings();
+
+    @BeforeClass
+    static public void setup() throws IOException {
+        tempDir = GcodeStreamTest.createTempDirectory();
+    }
+
+    @AfterClass
+    static public void teardown() throws IOException {
+        FileUtils.forceDeleteOnExit(tempDir);
+    }
+
+    @Before
+    public void setUp() throws Exception {
+        this.mgc = new MockGrblCommunicator();
+        Localization.initialize("en_US");
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        // Reset private variable for GUIHelpers after test
+        Field f = GUIHelpers.class.getDeclaredField("unitTestMode");
+        f.setAccessible(true);
+        f.set(null, false);
+    }
+
+    @Test
+    public void cancelSendOnDoorStateShouldCancelCommandAndIssueReset() throws Exception {
+        // Initializing the controller and setting it to active state
+        GrblController instance = initializeAndConnectController(VERSION_GRBL_1_1F);
+        instance.setStatusUpdatesEnabled(true);
+
+        // Sending initial Door status update and clearing sent bytes
+        instance.rawResponseHandler("<Door|MPos:0.000,0.000,0.000|FS:0,0|Pn:XYZ>");
+        mgc.sentBytes.clear();
+
+        // Simulating the cancellation of send operation
+        instance.cancelSend();
+
+        // Verifying the cancelSend behavior
+        assertEquals("Cancel send should be triggered once", 1, mgc.numCancelSendCalls);
+        assertEquals("Pause should not be triggered", 0, mgc.numPauseSendCalls);
+        assertEquals("No bytes should be sent after cancel", 0, mgc.sentBytes.size());
+
+        // Sending another Door status update
+        instance.rawResponseHandler("<Door|MPos:0.000,0.000,0.000|FS:0,0|Pn:XYZ>");
+        
+        // Verifying the cancel behavior remains consistent
+        assertEquals("Cancel send should remain triggered", 1, mgc.numCancelSendCalls);
+        assertEquals("Pause should not be triggered", 0, mgc.numPauseSendCalls);
+        assertEquals("No bytes should be sent", 0, mgc.sentBytes.size());
+
+        // Sending another Door status update to trigger reset
+        instance.rawResponseHandler("<Door|MPos:0.000,0.000,0.000|FS:0,0|Pn:XYZ>");
+
+        // Verifying that cancelSend is called again and reset command is issued
+        assertEquals("Cancel send should be triggered again", 2, mgc.numCancelSendCalls);
+        assertEquals("Pause should not be triggered", 0, mgc.numPauseSendCalls);
+        assertEquals("Reset command should be sent", 1, mgc.sentBytes.size());
+        assertEquals("Sent byte should be reset command", Byte.valueOf(GRBL_RESET_COMMAND), mgc.sentBytes.get(0));
+    }
+
+    private GrblController initializeAndConnectController(String version) throws IOException {
+        // Mock and initialize the GrblController here, return instance
+        GrblController controller = new GrblController(mgc, version);
+        controller.connect();
+        return controller;
+    }
+}
+```

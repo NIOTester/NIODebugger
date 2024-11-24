@@ -1,0 +1,27 @@
+@@ -14,6 +14,8 @@
+ 
+ import java.util.List;
+ 
++import java.util.UUID;
++
+ /**
+  * StateMachineTest
+  *
+@@ -94,6 +96,8 @@
+ 
+     @Test
+     public void testExternalTransitionsNormal() {
++        String uniqueMachineId = UUID.randomUUID().toString() + "_TestStateMachine1";
++
+         StateMachineBuilder<States, Events, Context> builder = StateMachineBuilderFactory.create();
+         builder.externalTransitions()
+             .fromAmong(States.STATE1, States.STATE2, States.STATE3)
+@@ -102,7 +106,7 @@
+             .when(checkCondition())
+             .perform(doAction());
+ 
+-        StateMachine<States, Events, Context> stateMachine = builder.build(MACHINE_ID + "1");
++        StateMachine<States, Events, Context> stateMachine = builder.build(uniqueMachineId);
+         States target = stateMachine.fireEvent(States.STATE2, Events.EVENT1, new Context());
+         Assert.assertEquals(States.STATE4, target);
+     }

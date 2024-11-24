@@ -1,0 +1,19 @@
+@@ -22,6 +22,7 @@
+ import java.lang.reflect.Modifier;
+ import java.util.ArrayList;
+ import java.util.List;
++import java.util.UUID;
+ import java.util.concurrent.CountDownLatch;
+ import javassist.ClassPool;
+ 
+@@ -54,9 +55,8 @@
+     @Test
+     void test() throws Exception {
+         ClassGenerator cg = ClassGenerator.newInstance();
+-
+         // add className, interface, superClass
+-        String className = BaseClass.class.getPackage().getName() + ".TestClass";
++        String className = BaseClass.class.getPackage().getName() + ".TestClass" + UUID.randomUUID().toString().replace("-", "");
+         cg.setClassName(className);
+         cg.addInterface(BaseInterface.class);
+         cg.setSuperClass(BaseClass.class);

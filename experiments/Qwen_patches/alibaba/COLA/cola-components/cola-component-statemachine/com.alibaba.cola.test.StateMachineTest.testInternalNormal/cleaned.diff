@@ -1,0 +1,11 @@
+@@ -115,7 +115,9 @@
+             .on(Events.INTERNAL_EVENT)
+             .when(checkCondition())
+             .perform(doAction());
+-        StateMachine<States, Events, Context> stateMachine = builder.build(MACHINE_ID + "2");
++        
++        // Generate a random unique machine ID
++        StateMachine<States, Events, Context> stateMachine = builder.build(java.util.UUID.randomUUID().toString() + MACHINE_ID + "2");
+ 
+         stateMachine.fireEvent(States.STATE1, Events.EVENT1, new Context());
+         States target = stateMachine.fireEvent(States.STATE1, Events.INTERNAL_EVENT, new Context());

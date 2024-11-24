@@ -1,0 +1,24 @@
+@@ -2,6 +2,7 @@
+ package org.example.domain;
+ 
+ import io.ebean.DB;
++import org.junit.jupiter.api.BeforeEach;
+ import org.junit.jupiter.api.Test;
+ import org.postgis.Point;
+ import org.postgis.Polygon;
+@@ -11,6 +12,15 @@
+ import static org.junit.jupiter.api.Assertions.*;
+ 
+ public class TestCacheSerialization {
++
++  @BeforeEach
++  public void setup() {
++    CachedBean cachedBean = DB.find(CachedBean.class, 2081L);
++    if (cachedBean != null) {
++      DB.delete(cachedBean);
++    }
++  }
++
+   @Test
+   public void testCache() throws SQLException {
+     Point p1=new Point(1.0, 2.0);

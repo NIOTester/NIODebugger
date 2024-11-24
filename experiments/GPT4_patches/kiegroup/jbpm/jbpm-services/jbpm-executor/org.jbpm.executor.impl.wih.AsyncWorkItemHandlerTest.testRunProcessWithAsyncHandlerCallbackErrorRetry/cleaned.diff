@@ -1,0 +1,26 @@
+@@ -499,6 +499,7 @@
+     
+     @Test(timeout=10000)
+     public void testRunProcessWithAsyncHandlerCallbackErrorRetry() throws Exception {
++        int initialIncrement = IncrementService.get();
+         final NodeLeftCountDownProcessEventListener countDownListener = new NodeLeftCountDownProcessEventListener("Task 1", 1);
+         RuntimeEnvironment environment = RuntimeEnvironmentBuilder.Factory.get().newDefaultBuilder()
+                 .userGroupCallback(userGroupCallback)
+@@ -528,7 +529,7 @@
+         KieSession ksession = runtime.getKieSession();
+         assertNotNull(ksession); 
+         
+-        assertEquals(0, IncrementService.get());
++        assertEquals(initialIncrement, IncrementService.get());
+         
+         Map<String, Object> params = new HashMap<String, Object>(); 
+         params.put("retryAsync", "1s, 2s, 4s");
+@@ -549,7 +550,7 @@
+         processInstance = ksession.getProcessInstance(processInstance.getId());
+         assertNull(processInstance);
+         
+-        assertEquals(1, IncrementService.get());
++        assertEquals(initialIncrement + 1, IncrementService.get());
+     }
+     
+     @Test(timeout=10000)

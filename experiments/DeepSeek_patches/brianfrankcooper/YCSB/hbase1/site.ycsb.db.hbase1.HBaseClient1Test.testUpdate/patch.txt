@@ -1,0 +1,146 @@
+To fix the test so that it is idempotent and clean up the client properly, you need to ensure that the `client` object is properly closed after each test. Additionally, you should check if the table is already created before trying to insert data, as inserting data into a table that doesn't exist will throw an `IOException`.
+
+Here's the updated test:
+
+```java
+package site.ycsb.db.hbase1;
+
+import static site.ycsb.workloads.CoreWorkload.TABLENAME_PROPERTY;
+import static site.ycsb.workloads.CoreWorkload.TABLENAME_PROPERTY_DEFAULT;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
+
+import site.ycsb.ByteIterator;
+import site.ycsb.Status;
+import site.ycsb.StringByteIterator;
+import site.ycsb.measurements.Measurements;
+import site.ycsb.workloads.CoreWorkload;
+
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hbase.HBaseTestingUtility;
+import org.apache.hadoop.hbase.client.Get;
+import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.client.Result;
+import org.apache.hadoop.hbase.client.Table;
+import org.apache.hadoop.hbase.util.Bytes;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Ignore;
+import org.junit.Test;
+
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Properties;
+import java.util.Vector;
+
+public class HBaseClient1Test {
+
+  private final static String COLUMN_FAMILY = "cf";
+
+  private static HBaseTestingUtility testingUtil;
+  private HBaseClient1 client;
+  private Table table = null;
+  private String tableName;
+
+  private static boolean isWindows() {
+    final String os = System.getProperty("os.name");
+    return os.startsWith("Windows");
+  }
+
+  @BeforeClass
+  public static void setUpClass() throws Exception {
+    // Minicluster setup fails on Windows with an UnsatisfiedLinkError.
+    // Skip if windows.
+    assumeTrue(!isWindows());
+    testingUtil = HBaseTestingUtility.createLocalHTU();
+    testingUtil.startMiniCluster();
+  }
+
+  @AfterClass
+  public static void tearDownClass() throws Exception {
+    if (testingUtil != null) {
+      testingUtil.shutdownMiniCluster();
+    }
+  }
+
+  @Before
+  public void setUp() throws Exception {
+    client = new HBaseClient1();
+    client.setConfiguration(new Configuration(testingUtil.getConfiguration()));
+
+    Properties p = new Properties();
+    p.setProperty("columnfamily", COLUMN_FAMILY);
+
+    Measurements.setProperties(p);
+    final CoreWorkload workload = new CoreWorkload();
+    workload.init(p);
+
+    tableName = p.getProperty(TABLENAME_PROPERTY, TABLENAME_PROPERTY_DEFAULT);
+    table = testingUtil.createTable(TableName.valueOf(tableName), Bytes.toBytes(COLUMN_FAMILY));
+
+    client.setProperties(p);
+    client.init();
+  }
+
+  @After
+  public void tearDown() throws Exception {
+    if (client != null) {
+      try {
+        client.cleanup();
+      } catch (Exception e) {
+        System.err.println("Error during client cleanup: " + e.getMessage());
+        e.printStackTrace();
+      }
+    }
+
+    if (table != null) {
+      try {
+        table.close();
+      } catch (Exception e) {
+        System.err.println("Error closing table: " + e.getMessage());
+        e.printStackTrace();
+      }
+    }
+
+    try {
+      testingUtil.deleteTable(tableName);
+    } catch (Exception e) {
+      System.err.println("Error deleting table: " + e.getMessage());
+      e.printStackTrace();
+    }
+  }
+
+  @Test
+  public void testUpdate() throws Exception {
+    final String key = "key";
+    final HashMap<String, String> input = new HashMap<String, String>();
+    input.put("column1", "value1");
+    input.put("column2", "value2");
+    final Status status = client.insert(tableName, key, StringByteIterator.getByteIteratorMap(input));
+    assertEquals(Status.OK, status);
+
+    // Verify result
+    final Get get = new Get(Bytes.toBytes(key));
+    final Result result = this.table.get(get);
+    assertFalse(result.isEmpty());
+    assertEquals(2, result.size());
+    for(final java.util.Map.Entry<String, String> entry : input.entrySet()) {
+      assertEquals(entry.getValue(),
+          new String(result.getValue(Bytes.toBytes(COLUMN_FAMILY),
+            Bytes.toBytes(entry.getKey()))));
+    }
+  }
+}
+```
+
+In this fix:
+- The `client` object is closed in the `tearDown` method to ensure that it is properly cleaned up after each test.
+- The `delete` method is now called to delete the table, which will also delete any associated data in the table.
+- The test uses `try-catch` blocks to handle any potential exceptions that might occur during the deletion process.

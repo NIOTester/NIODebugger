@@ -1,0 +1,26 @@
+@@ -32,6 +32,7 @@
+ import org.apache.hadoop.mapreduce.TaskType;
+ import org.apache.hadoop.util.Progress;
+ import org.junit.After;
++import org.junit.Before;
+ import org.junit.Assert;
+ import org.junit.Rule;
+ import org.junit.Test;
+@@ -52,6 +53,17 @@
+           System.getProperty("java.io.tmpdir", "/tmp")),
+       TestMapTask.class.getName());
+ 
++  @Before
++  public void setup() throws Exception {
++    // Check if the test root directory exists, and create it if it doesn't
++    if (!TEST_ROOT_DIR.exists()) {
++        if (!TEST_ROOT_DIR.mkdirs()) {
++            throw new IOException("Failed to create test root directory: " + TEST_ROOT_DIR);
++        }
++    }
++  }
++
++
+   @After
+   public void cleanup() throws Exception {
+     FileUtil.fullyDelete(TEST_ROOT_DIR);

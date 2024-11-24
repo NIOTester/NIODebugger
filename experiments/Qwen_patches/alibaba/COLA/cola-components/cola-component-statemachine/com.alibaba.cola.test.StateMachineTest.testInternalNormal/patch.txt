@@ -1,0 +1,18 @@
+```java
+@Test
+public void testInternalNormal() {
+    StateMachineBuilder<States, Events, Context> builder = StateMachineBuilderFactory.create();
+    builder.internalTransition()
+        .within(States.STATE1)
+        .on(Events.INTERNAL_EVENT)
+        .when(checkCondition())
+        .perform(doAction());
+
+    // Generate a random unique machine ID
+    StateMachine<States, Events, Context> stateMachine = builder.build(java.util.UUID.randomUUID().toString() + MACHINE_ID + "2");
+    
+    stateMachine.fireEvent(States.STATE1, Events.EVENT1, new Context());
+    States target = stateMachine.fireEvent(States.STATE1, Events.INTERNAL_EVENT, new Context());
+    Assert.assertEquals(States.STATE1, target);
+}
+```

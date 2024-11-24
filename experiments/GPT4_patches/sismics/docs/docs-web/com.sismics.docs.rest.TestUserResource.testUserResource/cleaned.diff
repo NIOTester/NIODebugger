@@ -1,0 +1,12 @@
+@@ -231,6 +231,11 @@
+                         .param("username", "alice")
+                         .param("password", "12345678")));
+         Assert.assertEquals(Status.FORBIDDEN, Status.fromStatusCode(response.getStatus()));
++
++        // Delete user bob
++        target().path("/user").request()
++                .cookie(TokenBasedSecurityFilter.COOKIE_NAME, bobToken)
++                .delete();
+     }
+ 
+     /**

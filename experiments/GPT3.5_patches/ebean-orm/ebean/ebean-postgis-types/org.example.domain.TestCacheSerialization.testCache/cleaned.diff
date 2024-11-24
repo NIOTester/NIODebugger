@@ -1,0 +1,9 @@
+@@ -36,6 +36,8 @@
+     assertEquals(p1, r2.getPoint());  // and did fail https://github.com/ebean-orm/ebean/issues/3026
+     assertEquals(pol, r2.getPolygon());
+ 
++    DB.delete(tb); // delete the cached bean from the database
++
+   }
+ 
+   @Test

@@ -1,0 +1,199 @@
+```java
+package org.apache.hadoop.mapred;
+import java.io.File;
+import java.io.IOException;
+import java.util.Random;
+import org.apache.commons.io.FileUtils;
+import org.apache.hadoop.fs.FSDataOutputStream;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.FileUtil;
+import org.apache.hadoop.fs.LocalFileSystem;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.ipc.ProtocolSignature;
+import org.apache.hadoop.mapred.SortedRanges.Range;
+import org.apache.hadoop.mapreduce.MRConfig;
+import org.apache.hadoop.mapreduce.MRJobConfig;
+import org.apache.hadoop.mapreduce.checkpoint.TaskCheckpointID;
+import org.apache.hadoop.util.ExitUtil;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Assert;
+import org.junit.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+
+public class TestTaskProgressReporter {
+  private static int statusUpdateTimes = 0;
+
+  volatile boolean threadExited = false;
+
+  final static int LOCAL_BYTES_WRITTEN = 1024;
+
+  private FakeUmbilical fakeUmbilical = new FakeUmbilical();
+
+  private static final String TEST_DIR =
+      System.getProperty("test.build.data", System.getProperty("java.io.tmpdir")) + "/" + TestTaskProgressReporter.class.getName();
+
+  private static class DummyTask extends Task {
+    @Override
+    public void run(JobConf job, TaskUmbilicalProtocol umbilical)
+        throws IOException, ClassNotFoundException, InterruptedException {
+    }
+
+    @Override
+    public boolean isMapTask() {
+      return true;
+    }
+
+    @Override
+    public boolean isCommitRequired() {
+      return false;
+    }
+  }
+
+  private static class FakeUmbilical implements TaskUmbilicalProtocol {
+    @Override
+    public long getProtocolVersion(String protocol, long clientVersion)
+        throws IOException {
+      return 0;
+    }
+
+    @Override
+    public ProtocolSignature getProtocolSignature(String protocol,
+        long clientVersion, int clientMethodsHash) throws IOException {
+      return null;
+    }
+
+    @Override
+    public JvmTask getTask(JvmContext context) throws IOException {
+      return null;
+    }
+
+    @Override
+    public AMFeedback statusUpdate(TaskAttemptID taskId,
+        TaskStatus taskStatus) throws IOException, InterruptedException {
+      statusUpdateTimes++;
+      AMFeedback feedback = new AMFeedback();
+      feedback.setTaskFound(true);
+      feedback.setPreemption(true);
+      return feedback;
+    }
+
+    @Override
+    public void reportDiagnosticInfo(TaskAttemptID taskid, String trace)
+        throws IOException {
+    }
+
+    @Override
+    public void reportNextRecordRange(TaskAttemptID taskid, Range range)
+        throws IOException {
+    }
+
+    @Override
+    public void done(TaskAttemptID taskid) throws IOException {
+    }
+
+    @Override
+    public void commitPending(TaskAttemptID taskId, TaskStatus taskStatus)
+        throws IOException, InterruptedException {
+    }
+
+    @Override
+    public boolean canCommit(TaskAttemptID taskid) throws IOException {
+      return false;
+    }
+
+    @Override
+    public void shuffleError(TaskAttemptID taskId, String message)
+        throws IOException {
+    }
+
+    @Override
+    public void fsError(TaskAttemptID taskId, String message)
+        throws IOException {
+    }
+
+    @Override
+    public void fatalError(TaskAttemptID taskId, String message, boolean fastFail)
+        throws IOException {
+    }
+
+    @Override
+    public MapTaskCompletionEventsUpdate getMapCompletionEvents(
+        JobID jobId, int fromIndex, int maxLocs, TaskAttemptID id)
+        throws IOException {
+      return null;
+    }
+
+    @Override
+    public void preempted(TaskAttemptID taskId, TaskStatus taskStatus)
+        throws IOException, InterruptedException {
+    }
+
+    @Override
+    public TaskCheckpointID getCheckpointID(TaskID taskID) {
+      return null;
+    }
+
+    @Override
+    public void setCheckpointID(TaskID tid, TaskCheckpointID cid) {
+    }
+  }
+
+  private class DummyTaskReporter extends Task.TaskReporter {
+    volatile boolean taskLimitIsChecked = false;
+
+    public DummyTaskReporter(Task task) {
+      task.super(task.getProgress(), fakeUmbilical);
+    }
+
+    @Override
+    public void setProgress(float progress) {
+      super.setProgress(progress);
+    }
+
+    @Override
+    protected void checkTaskLimits() throws TaskLimitException {
+      taskLimitIsChecked = true;
+      super.checkTaskLimits();
+    }
+  }
+
+  @Before
+  public void setup() {
+    statusUpdateTimes = 0;
+  }
+
+  @After
+  public void cleanup() {
+    FileSystem.clearStatistics();
+  }
+
+  private void getBaseConfAndWriteToFile(int size, File data)
+      throws IOException {
+    if (size > 0) {
+      byte[] b = new byte[size];
+      for (int i = 0; i < size; i++) {
+        b[i] = 1;
+      }
+      FileUtils.writeByteArrayToFile(data, b);
+    }
+  }
+
+  @Test (timeout=10000)
+  public void testTaskProgress() throws Exception {
+    JobConf job = new JobConf();
+    job.setLong(MRJobConfig.TASK_PROGRESS_REPORT_INTERVAL, 1000);
+    Task task = new DummyTask();
+    task.setConf(job);
+    DummyTaskReporter reporter = new DummyTaskReporter(task);
+    Thread t = new Thread(reporter);
+    t.start();
+    Thread.sleep(2100);
+    task.setTaskDone();
+    reporter.resetDoneFlag();
+    t.join();
+    assertThat(statusUpdateTimes).isEqualTo(2);
+    statusUpdateTimes = 0; // reset status update times to 0 to avoid polluted states
+  }
+}
+```

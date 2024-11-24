@@ -1,0 +1,11 @@
+@@ -94,6 +94,10 @@
+         startLatch.countDown();
+         endLatch.await();
+         Assertions.assertEquals(successCount.get(), max);
++
++        // Remove status to clear metrics
++        RpcStatus.removeStatus(url, methodName);
++        RpcStatus.removeStatus(url);
+     }
+ 
+     @Test

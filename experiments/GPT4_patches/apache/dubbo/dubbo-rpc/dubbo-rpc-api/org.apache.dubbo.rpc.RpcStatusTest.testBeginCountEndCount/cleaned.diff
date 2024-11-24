@@ -1,0 +1,10 @@
+@@ -40,6 +40,9 @@
+         String methodName = "testBeginCountEndCount";
+         int max = 2;
+ 
++        RpcStatus.removeStatus(url);
++        RpcStatus.removeStatus(url, methodName);
++
+         boolean flag = RpcStatus.beginCount(url, methodName, max);
+         RpcStatus urlRpcStatus = RpcStatus.getStatus(url);
+         RpcStatus methodRpcStatus = RpcStatus.getStatus(url, methodName);

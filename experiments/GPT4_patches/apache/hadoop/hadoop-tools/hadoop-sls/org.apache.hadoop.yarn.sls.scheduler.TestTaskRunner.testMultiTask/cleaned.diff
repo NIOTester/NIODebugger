@@ -1,0 +1,20 @@
+@@ -164,7 +164,7 @@
+   }
+ 
+   public static class MultiTask extends TaskRunner.Task {
+-    public static CountDownLatch latch = new CountDownLatch(1);
++    public static CountDownLatch latch;
+     public static boolean first;
+     public static int middle;
+     public static boolean last;
+@@ -198,6 +198,10 @@
+ 
+   @Test
+   public void testMultiTask() throws Exception {
++    MultiTask.first = false;
++    MultiTask.middle = 0;
++    MultiTask.last = false;
++    MultiTask.latch = new CountDownLatch(1);
+     runner.start();
+     runner.schedule(new MultiTask(0, 20, 5));
+     MultiTask.latch.await(5000, TimeUnit.MILLISECONDS);

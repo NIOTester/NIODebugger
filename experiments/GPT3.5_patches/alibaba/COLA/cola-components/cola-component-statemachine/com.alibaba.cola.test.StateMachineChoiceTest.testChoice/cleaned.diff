@@ -1,0 +1,18 @@
+@@ -35,6 +35,8 @@
+      */
+     @Test
+     public void testChoice(){
++        String machineId = "ChoiceConditionMachine_" + System.currentTimeMillis();
++
+         StateMachineBuilder<StateMachineTest.States, StateMachineTest.Events, Context> builder = StateMachineBuilderFactory.create();
+         builder.internalTransition()
+             .within(StateMachineTest.States.STATE1)
+@@ -54,7 +56,7 @@
+             .when(checkCondition3())
+             .perform(doAction());
+ 
+-        StateMachine<StateMachineTest.States, StateMachineTest.Events, Context> stateMachine = builder.build("ChoiceConditionMachine");
++        StateMachine<StateMachineTest.States, StateMachineTest.Events, Context> stateMachine = builder.build(machineId);
+         StateMachineTest.States target1 = stateMachine.fireEvent(StateMachineTest.States.STATE1, StateMachineTest.Events.EVENT1, new Context("1"));
+         Assertions.assertEquals(StateMachineTest.States.STATE1,target1);
+         StateMachineTest.States target2 = stateMachine.fireEvent(StateMachineTest.States.STATE1, StateMachineTest.Events.EVENT1, new Context("2"));

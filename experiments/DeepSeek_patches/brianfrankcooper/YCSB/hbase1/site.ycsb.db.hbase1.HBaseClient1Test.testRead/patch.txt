@@ -1,0 +1,124 @@
+To fix the test and make it idempotent, we need to ensure that the client is properly closed after each test case. Here's the updated test:
+
+```java
+package site.ycsb.db.hbase1;
+
+import static site.ycsb.workloads.CoreWorkload.TABLENAME_PROPERTY;
+import static site.ycsb.workloads.CoreWorkload.TABLENAME_PROPERTY_DEFAULT;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
+
+import site.ycsb.ByteIterator;
+import site.ycsb.Status;
+import site.ycsb.StringByteIterator;
+import site.ycsb.measurements.Measurements;
+import site.ycsb.workloads.CoreWorkload;
+
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hbase.HBaseTestingUtility;
+import org.apache.hadoop.hbase.client.Get;
+import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.client.Result;
+import org.apache.hadoop.hbase.client.Table;
+import org.apache.hadoop.hbase.util.Bytes;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Ignore;
+import org.junit.Test;
+
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Properties;
+import java.util.Vector;
+
+public class HBaseClient1Test {
+
+  private final static String COLUMN_FAMILY = "cf";
+
+  private static HBaseTestingUtility testingUtil;
+  private HBaseClient1 client;
+  private Table table = null;
+  private String tableName;
+
+  private static boolean isWindows() {
+    final String os = System.getProperty("os.name");
+    return os.startsWith("Windows");
+  }
+
+  @BeforeClass
+  public static void setUpClass() throws Exception {
+    // Minicluster setup fails on Windows with an UnsatisfiedLinkError.
+    // Skip if windows.
+    assumeTrue(!isWindows());
+    testingUtil = HBaseTestingUtility.createLocalHTU();
+    testingUtil.startMiniCluster();
+  }
+
+  @AfterClass
+  public static void tearDownClass() throws Exception {
+    if (testingUtil != null) {
+      testingUtil.shutdownMiniCluster();
+    }
+  }
+
+  @Before
+  public void setUp() throws Exception {
+    client = new HBaseClient1();
+    client.setConfiguration(new Configuration(testingUtil.getConfiguration()));
+
+    Properties p = new Properties();
+    p.setProperty("columnfamily", COLUMN_FAMILY);
+
+    Measurements.setProperties(p);
+    final CoreWorkload workload = new CoreWorkload();
+    workload.init(p);
+
+    tableName = p.getProperty(TABLENAME_PROPERTY, TABLENAME_PROPERTY_DEFAULT);
+    table = testingUtil.createTable(TableName.valueOf(tableName), Bytes.toBytes(COLUMN_FAMILY));
+
+    client.setProperties(p);
+    client.init();
+  }
+
+  @After
+  public void tearDown() throws Exception {
+    if (table != null) {
+      table.close();
+    }
+    testingUtil.deleteTable(tableName);
+    client.cleanup();
+  }
+
+  @Test
+  public void testRead() throws Exception {
+    final String rowKey = "row1";
+    final Put p = new Put(Bytes.toBytes(rowKey));
+    p.addColumn(Bytes.toBytes(COLUMN_FAMILY),
+        Bytes.toBytes("column1"), Bytes.toBytes("value1"));
+    p.addColumn(Bytes.toBytes(COLUMN_FAMILY),
+        Bytes.toBytes("column2"), Bytes.toBytes("value2"));
+    table.put(p);
+
+    final HashMap<String, ByteIterator> result = new HashMap<String, ByteIterator>();
+    final Status status = client.read(tableName, rowKey, null, result);
+    assertEquals(Status.OK, status);
+    assertEquals(2, result.size());
+    assertEquals("value1", result.get("column1").toString());
+    assertEquals("value2", result.get("column2").toString());
+  }
+}
+```
+
+### Explanation:
+- **Initialization**: In the `tearDown` method, the `cleanup()` method is called to ensure that all resources are properly released.
+- **Closing Resources**: After each test case, the `table` and `client` are closed to free up resources.
+- **Testing**: The `read` method now correctly handles the cleanup process.
+
+This change ensures that the client is properly closed after each test case, preventing potential issues with resource leaks.

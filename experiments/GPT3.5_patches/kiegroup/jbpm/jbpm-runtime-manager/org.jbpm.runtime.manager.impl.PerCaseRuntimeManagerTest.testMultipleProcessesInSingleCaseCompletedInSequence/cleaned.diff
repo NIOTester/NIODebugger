@@ -1,0 +1,8 @@
+@@ -365,6 +365,7 @@
+         assertEquals(ksession1Id, ksessionUsed.iterator().next().longValue());
+         
+         
++        manager.disposeRuntimeEngine(runtime); // add this line to fix state pollution
+         manager.close();
+     }
+

@@ -1,0 +1,145 @@
+```
+package org.apache.dubbo.config.integration.single.exportprovider;
+
+import org.apache.dubbo.common.config.configcenter.ConfigItem;
+import org.apache.dubbo.common.constants.CommonConstants;
+import org.apache.dubbo.common.extension.ExtensionLoader;
+import org.apache.dubbo.config.ApplicationConfig;
+import org.apache.dubbo.config.ProtocolConfig;
+import org.apache.dubbo.config.ReferenceConfig;
+import org.apache.dubbo.config.RegistryConfig;
+import org.apache.dubbo.config.ServiceConfig;
+import org.apache.dubbo.config.ServiceListener;
+import org.apache.dubbo.config.bootstrap.DubboBootstrap;
+import org.apache.dubbo.config.integration.IntegrationTest;
+import org.apache.dubbo.metadata.ServiceNameMapping;
+import org.apache.dubbo.metadata.report.MetadataReportInstance;
+import org.apache.dubbo.registry.integration.RegistryProtocolListener;
+import org.apache.dubbo.rpc.ExporterListener;
+import org.apache.dubbo.rpc.Filter;
+import org.apache.dubbo.rpc.model.ApplicationModel;
+import org.apache.dubbo.test.check.registrycenter.config.ZookeeperRegistryCenterConfig;
+
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import static org.apache.dubbo.common.constants.CommonConstants.REGISTRY_PROTOCOL_LISTENER_KEY;
+import static org.apache.dubbo.config.integration.Constants.SINGLE_CONFIG_CENTER_EXPORT_PROVIDER;
+import static org.apache.dubbo.rpc.Constants.SCOPE_LOCAL;
+
+class SingleRegistryCenterExportProviderIntegrationTest implements IntegrationTest {
+
+    private static final Logger logger =
+            LoggerFactory.getLogger(SingleRegistryCenterExportProviderIntegrationTest.class);
+
+    private static String PROVIDER_APPLICATION_NAME = "single-registry-center-for-export-provider";
+
+    private static String PROTOCOL_NAME = CommonConstants.DUBBO;
+    private static int PROTOCOL_PORT = 20800;
+
+    private ServiceConfig<SingleRegistryCenterExportProviderService> serviceConfig;
+
+    private SingleRegistryCenterExportProviderRegistryProtocolListener registryProtocolListener;
+
+    private SingleRegistryCenterExportProviderExporterListener exporterListener;
+
+    private SingleRegistryCenterExportProviderFilter filter;
+
+    private SingleRegistryCenterExportProviderServiceListener serviceListener;
+
+    @BeforeEach
+    public void setUp() throws Exception {
+        logger.info(getClass().getSimpleName() + " testcase is beginning...");
+        DubboBootstrap.reset();
+        serviceConfig = new ServiceConfig<>();
+        serviceConfig.setInterface(SingleRegistryCenterExportProviderService.class);
+        serviceConfig.setRef(new SingleRegistryCenterExportProviderServiceImpl());
+        serviceConfig.setAsync(false);
+
+        DubboBootstrap.getInstance()
+                .application(new ApplicationConfig(PROVIDER_APPLICATION_NAME))
+                .protocol(new ProtocolConfig(PROTOCOL_NAME, PROTOCOL_PORT))
+                .service(serviceConfig);
+
+        RegistryConfig registryConfig = new RegistryConfig(ZookeeperRegistryCenterConfig.getConnectionAddress());
+        Map<String, String> parameters = new HashMap<>();
+        parameters.put(REGISTRY_PROTOCOL_LISTENER_KEY, "singleConfigCenterExportProvider");
+        registryConfig.updateParameters(parameters);
+        DubboBootstrap.getInstance().registry(registryConfig);
+    }
+
+    private void beforeExport() {
+        registryProtocolListener = (SingleRegistryCenterExportProviderRegistryProtocolListener)
+                ExtensionLoader.getExtensionLoader(RegistryProtocolListener.class)
+                        .getExtension(SINGLE_CONFIG_CENTER_EXPORT_PROVIDER);
+        exporterListener = (SingleRegistryCenterExportProviderExporterListener)
+                ExtensionLoader.getExtensionLoader(ExporterListener.class)
+                        .getExtension(SINGLE_CONFIG_CENTER_EXPORT_PROVIDER);
+        filter = (SingleRegistryCenterExportProviderFilter)
+                ExtensionLoader.getExtensionLoader(Filter.class).getExtension(SINGLE_CONFIG_CENTER_EXPORT_PROVIDER);
+        serviceListener = (SingleRegistryCenterExportProviderServiceListener)
+                ExtensionLoader.getExtensionLoader(ServiceListener.class)
+                        .getExtension(SINGLE_CONFIG_CENTER_EXPORT_PROVIDER);
+        Assertions.assertFalse(serviceConfig.isExported());
+        Assertions.assertNotNull(registryProtocolListener);
+        Assertions.assertFalse(registryProtocolListener.isExported());
+        Assertions.assertTrue(serviceListener.getExportedServices().isEmpty());
+        Assertions.assertTrue(exporterListener.getExportedExporters().isEmpty());
+    }
+
+    @Test
+    @Override
+    public void integrate() {
+        beforeExport();
+        DubboBootstrap.getInstance().start();
+        afterExport();
+        ReferenceConfig<SingleRegistryCenterExportProviderService> referenceConfig = new ReferenceConfig<>();
+        referenceConfig.setInterface(SingleRegistryCenterExportProviderService.class);
+        referenceConfig.setScope(SCOPE_LOCAL);
+        referenceConfig.get().hello(PROVIDER_APPLICATION_NAME);
+        afterInvoke();
+    }
+
+    private void afterExport() {
+        Assertions.assertTrue(registryProtocolListener.isExported());
+        Assertions.assertEquals(serviceListener.getExportedServices().size(), 1);
+        Assertions.assertEquals(
+                serviceListener.getExportedServices().get(0).getInterfaceClass(),
+                SingleRegistryCenterExportProviderService.class);
+        Assertions.assertTrue(serviceListener.getExportedServices().get(0).isExported());
+        Assertions.assertEquals(exporterListener.getExportedExporters().size(), 4);
+        Assertions.assertTrue(exporterListener.getFilters().contains(filter));
+        ConfigItem configItem = ApplicationModel.defaultModel()
+                .getBeanFactory()
+                .getBean(MetadataReportInstance.class)
+                .getMetadataReport(CommonConstants.DEFAULT_KEY)
+                .getConfigItem(serviceConfig.getInterface(), ServiceNameMapping.DEFAULT_MAPPING_GROUP);
+        Assertions.assertNotNull(configItem);
+        Assertions.assertEquals(PROVIDER_APPLICATION_NAME, configItem.getContent());
+        Assertions.assertNotNull(configItem.getTicket());
+    }
+
+    private void afterInvoke() {
+        Assertions.assertTrue(filter.hasCalled());
+        Assertions.assertFalse(filter.hasError());
+        Assertions.assertEquals("Hello " + PROVIDER_APPLICATION_NAME, filter.getResponse());
+    }
+
+    @AfterEach
+    public void tearDown() throws IOException {
+        DubboBootstrap.reset();
+        serviceConfig = null;
+        Assertions.assertTrue(serviceListener.getExportedServices().isEmpty());
+        logger.info(getClass().getSimpleName() + " testcase is ending...");
+        registryProtocolListener = null;
+    }
+}
+```

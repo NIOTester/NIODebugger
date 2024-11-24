@@ -1,0 +1,40 @@
+```java
+package com.alibaba.cola.test;
+
+import java.util.UUID;
+
+/**
+ * StateMachineUnNormalTest
+ */
+public class StateMachineUnNormalTest {
+    @Test
+    public void testConditionNotMeet() {
+        StateMachineBuilder<StateMachineTest.States, StateMachineTest.Events, StateMachineTest.Context> builder = StateMachineBuilderFactory.create();
+        builder.externalTransition()
+                .from(StateMachineTest.States.STATE1)
+                .to(StateMachineTest.States.STATE2)
+                .on(StateMachineTest.Events.EVENT1)
+                .when(checkConditionFalse())
+                .perform(doAction());
+        
+        // Fix: assign a unique ID to each state machine to resolve non-idempotent behavior
+        StateMachine<StateMachineTest.States, StateMachineTest.Events, StateMachineTest.Context> stateMachine = builder.build(UUID.randomUUID().toString() + "NotMeetConditionMachine");
+        StateMachineTest.States target = stateMachine.fireEvent(StateMachineTest.States.STATE1, StateMachineTest.Events.EVENT1, new StateMachineTest.Context());
+        Assert.assertEquals(StateMachineTest.States.STATE1, target);
+    }
+
+    private Condition<StateMachineTest.Context> checkCondition() {
+        return (ctx) -> true;
+    }
+
+    private Condition<StateMachineTest.Context> checkConditionFalse() {
+        return (ctx) -> false;
+    }
+
+    private Action<StateMachineTest.States, StateMachineTest.Events, StateMachineTest.Context> doAction() {
+        return (from, to, event, ctx) -> {
+            System.out.println(ctx.operator + " is operating " + ctx.entityId + " from:" + from + " to:" + to + " on:" + event);
+        };
+    }
+}
+```

@@ -1,0 +1,17 @@
+@@ -1,3 +1,4 @@
++
+ package com.sismics.docs.rest;
+ 
+ import com.sismics.docs.rest.resource.ThirdPartyWebhookResource;
+@@ -84,5 +85,11 @@
+                 .get(JsonObject.class);
+         webhooks = json.getJsonArray("webhooks");
+         Assert.assertEquals(0, webhooks.size());
++
++        // Deletes webhook1
++        target().path("/user/webhook1").request()
++                .cookie(TokenBasedSecurityFilter.COOKIE_NAME, adminToken)
++                .delete();
+     }
+ }
++
