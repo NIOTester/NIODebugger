@@ -9,50 +9,75 @@ runPluginOnProject () {
     mvn -Dexec.executable='echo' -Dexec.args='${project.artifactId}' exec:exec -q -fn | tee modnames
     if grep -q "[ERROR]" modnames; then
         echo "========= ERROR IN PROJECT $1"
-	printf '%b\n' "$1,F,,,,,,,$(( ($(date +%s)-${start_time})/60 ))" >> ${DIR}/result.csv
+	    printf '%b\n' "$1,F,,,,,,,$(( ($(date +%s)-${start_time})/60 ))" >> ${DIR}/result.csv
         exit 1
     fi
-    mkdir .runNIODetector
-    mkdir ./.runNIODetector/logs
+    mkdir .runNIODebugger
+    mkdir ./.runNIODebugger/logs
     input="modnames"
-    while IFS= read -u3 -r line
-    do 
-	echo "========= run NIODetector in the project $1:$line"
-	mvn anonymized.path:Plugin:rerun -pl :$line -Drat.skip=true -Dlicense.skip=true | tee ./.runNIODetector/logs/$line.log
-	log_file=./.runNIODetector/logs/$line.log
-	last_successful_line=$(grep '\[ *[0-9]* tests successful *\]' "$log_file" | tail -n 1)
-	successful_tests=$(echo "$last_successful_line" | awk '{print $2}')
-	last_failed_line=$(grep '\[ *[0-9]* tests failed *\]' "$log_file" | tail -n 1)
-        failed_tests=$(echo "$last_failed_line" | awk '{print $2}')
-	last_skipped_line=$(grep '\[ *[0-9]* tests aborted *\]' "$log_file" | tail -n 1)
-        skipped_tests=$(echo "$last_skipped_line" | awk '{print $2}')
-	test_count=$((successful_tests + failed_tests + skipped_tests))
-	if grep -q 'Possible NIO Test(s) Found:' "$log_file"; then
-		NIO_count_string=$(grep 'Possible NIO Test(s) Found' "$log_file" | tail -n 1 | awk -F ': ' '{print $2}')
-		NIO_count=$((NIO_count_string))
-	else
-		NIO_count=0
-	fi
-	if [ "$NIO_count" -gt 0 ]; then
-		NIO_tests=$(grep -A "$NIO_count" 'Possible NIO Test(s) Found' "$log_file" | tail -n +2 | rev | cut -d'(' -f2 | rev | awk '{print $NF}')
-    		while IFS= read -r NIO_test; do
-                	echo "https://$1,${sha},${line},${NIO_test}" >> ${DIR}/NIO_flaky_tests.csv
-        	done <<< "$NIO_tests"
-	fi
-    	printf '%b\n' "$1:$line,${sha},T,${NIO_count},${test_count},${successful_tests},${failed_tests},${skipped_tests},$(( ($(date +%s)-${start_time})/60 ))" >> ${DIR}/result.csv
+    while IFS= read -u3 -r line; do
+        for i in {1..3}; do 
+            echo "========= run NIODebugger in the project $1:$line"
+            if [ "$i" -ge 2 ]; then
+                mvn clean install -DskipTests -pl :$line -am -Drat.skip=true -Dlicense.skip=true
+                mvn anonymized.path:Plugin:rerun -pl :$line -Drat.skip=true -Dlicense.skip=true
+            else
+                mvn anonymized.path:Plugin:rerun -pl :$line -Drat.skip=true -Dlicense.skip=true | tee ./.runNIODebugger/logs/$line.log
+            fi
+            log_file=./.runNIODebugger/logs/$line.log
+            last_successful_line=$(grep '\[ *[0-9]* tests successful *\]' "$log_file" | tail -n 1)
+            successful_tests=$(echo "$last_successful_line" | awk '{print $2}')
+            last_failed_line=$(grep '\[ *[0-9]* tests failed *\]' "$log_file" | tail -n 1)
+            failed_tests=$(echo "$last_failed_line" | awk '{print $2}')
+            last_skipped_line=$(grep '\[ *[0-9]* tests aborted *\]' "$log_file" | tail -n 1)
+            skipped_tests=$(echo "$last_skipped_line" | awk '{print $2}')
+            test_count=$((successful_tests + failed_tests + skipped_tests))
+            if grep -q 'Possible NIO Test(s) Found:' "$log_file"; then
+                NIO_count_string=$(grep 'Possible NIO Test(s) Found' "$log_file" | tail -n 1 | awk -F ': ' '{print $2}')
+                NIO_count=$((NIO_count_string))
+            else
+                NIO_count=0
+            fi
+            if [ "$NIO_count" -gt 0 ]; then
+                mvn anonymized.path:Plugin:downloadFixer -pl :$line
+                mvn anonymized.path:Plugin:collectTestInfo -pl :$line
+                if [[ "$2" == GPT* ]]; then
+                    python3 fixer.py $2 decide_relevant_source_code $3
+                    mvn anonymized.path:Plugin:collectRelevantSourceCode -pl :$line
+                    python3 fixer.py $2 fix $3
+                elif [[ "$2" == DeepSeek* || "$2" == Qwen* ]]; then
+                    python3 fixer.py $2 decide_relevant_source_code
+                    mvn anonymized.path:Plugin:collectRelevantSourceCode -pl :$line
+                    python3 fixer.py $2 fix
+                else
+                    echo "Unsupported model. Not generating patches."
+                fi
+                NIO_tests=$(grep -A "$NIO_count" 'Possible NIO Test(s) Found' "$log_file" | tail -n +2 | rev | cut -d'(' -f2 | rev | awk '{print $NF}')
+                [ -f unfixed_NIO_tests.csv ] && rm unfixed_NIO_tests.csv
+                touch unfixed_NIO_tests.csv
+                echo "Project URL,SHA Detected,Subproject Name,Fully-Qualified Test Name (packageName.ClassName#methodName)" >> unfixed_NIO_tests.csv
+                while IFS= read -r NIO_test; do
+                    if [ "$i" -lt 2 ]; then
+                        echo "https://$1,${sha},${line},${NIO_test}" >> ${DIR}/NIO_flaky_tests.csv
+                    fi
+                    echo "https://$1,${sha},${line},${NIO_test}" >> unfixed_NIO_tests.csv
+                done <<< "$NIO_tests"
+		        cur_dir=$(pwd)
+                cd ${DIR}
+                if [[ "$2" == GPT* ]]; then
+                    ./apply_nios.sh ${cur_dir}/unfixed_NIO_tests.csv $2 $3
+                elif [[ "$2" == DeepSeek* || "$2" == Qwen* ]]; then
+                    ./apply_nios.sh ${cur_dir}/unfixed_NIO_tests.csv $2
+                else
+                    echo "Unsupported model. Not searching for patches to apply."
+                fi
+                cd "$cur_dir"
+            fi
+            if [ "$i" -lt 2 ]; then
+                printf '%b\n' "$1:$line,${sha},T,${NIO_count},${test_count},${successful_tests},${failed_tests},${skipped_tests},$(( ($(date +%s)-${start_time})/60 ))" >> ${DIR}/result.csv
+            fi
+        done
     done 3<"$input"
 }
 
-if [ ! "$2" ]
-then
-    runPluginOnProject $1
-else
-    for file in $1/$2/*
-        do
-            echo "start running NIODetector in module: $file"
-            if test -d $file
-            then
-                runPluginOnProject.sh  $file
-            fi
-        done
-fi
+runPluginOnProject $1 $2 $3

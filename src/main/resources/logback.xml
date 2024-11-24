@@ -10,7 +10,7 @@
     </appender>
 
     <appender name="CUSTOM_FILE" class="anonymized.path.plugin.util.logging.CustomTimeBasedFileAppender">
-        <file>.NIOInspector/current-time/rerun-results</file>
+        <file>.NIODebugger/current-time/rerun-results</file>
         <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
             <layout class="ch.qos.logback.classic.PatternLayout">
                 <pattern>[%-4level] %msg%n%throwable</pattern>

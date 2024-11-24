@@ -5,20 +5,21 @@ This folder contains the scripts and results of our evaluation as described in t
 ## Core Contents
 
 - `projects.txt`: This file lists the slugs of all open-source projects used in our study.
-- `runPluginAtScale.sh`: A script that automatically runs the plugin on the projects listed in `projects.txt`.
-- `collect_NIO_information.sh`: A script that collects relevant logs after running the plugin.
+- `runPluginAtScale.sh`: A script that automatically runs the plugin on the projects listed in `projects.txt`. By default, the script uses GPT-4, and allows 3 runs of iterative prompting with the use of unsuccessful previous patches and execution results. During execution, this script calls `runPluginOnProject.sh` for each project, which uses `apply_nios.sh`, `apply_patch.sh`, and `generate_diff.py` to apply the NIODebugger-generated patch.
 - `result.csv`: This file contains the general results of the Detection Phase for all projects.
 - `NIO_flaky_tests.csv`: This file contains all possible NIO tests detected across all projects.
-- `autofixed_NIO_tests.csv`: This file contains all tests where our plugin successfully generated a patch.
-- `patch/`: This folder stores the patches for all the tests.
+- `collect_NIO_information.sh`: A script that collects the detected NIO tests into a LaTex table.
+- `autofixed_NIO_tests.csv`: This file contains all tests where our plugin successfully generated a patch using GPT-4.
+- `patch/`: This folder stores the GPT-4 patches generated for all detected tests, which are used for all opened PRs.
 
 ## Usage
 
 1. **Run the Plugin at Scale**:
    - To run the plugin on all projects listed in `projects.txt`, execute the following command:
      ```sh
-     ./runPluginAtScale.sh projects.txt
+     ./runPluginAtScale.sh projects.txt {model} {your_api_key_for_GPT}
      ```
+   `{model}` can be one of `GPT4`, `GPT3.5`, `Qwen`, or `DeepSeek`. If you use non-gpt models, `{your_api_key_for_GPT}` is not needed.
 
 2. **Collect NIO Information**:
    - After running the plugin, collect the relevant logs by executing:
@@ -36,5 +37,4 @@ This folder contains the scripts and results of our evaluation as described in t
 
 - Ensure that all scripts have execute permissions. You can set the permissions using:
   ```sh
-  chmod +x runPluginAtScale.sh collect_NIO_information.sh
-
+  chmod +x *.sh
